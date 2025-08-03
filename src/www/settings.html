@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>AmneziaWG - Settings</title>
+  <meta charset="utf-8"/>
+  <link href="./css/app.css" rel="stylesheet">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./img/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="./img/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<style>
+  [v-cloak] {
+    display: none;
+  }
+</style>
+
+<body class="bg-gray-50 dark:bg-neutral-800">
+  <div id="app">
+    <div v-cloak class="container mx-auto max-w-3xl px-3 md:px-0 mt-4 xs:mt-6">
+      <div class="flex flex-col-reverse xxs:flex-row flex-auto items-center items-end gap-3">
+        <h1 class="text-4xl dark:text-neutral-200 font-medium flex-grow self-start mb-4">
+          <a href="./" class="text-gray-400 dark:text-neutral-400 hover:underline">AmneziaWG</a> / <span class="align-middle">Settings</span>
+        </h1>
+      </div>
+
+      <div class="shadow-md rounded-lg bg-white dark:bg-neutral-700 overflow-hidden">
+        <div class="p-5">
+          <div class="flex flex-col gap-4">
+            <div>
+              <label class="text-lg font-medium dark:text-neutral-200">WG_ROLE</label>
+              <p class="text-gray-500 dark:text-neutral-400">{{ settings.WG_ROLE }}</p>
+            </div>
+            <div>
+              <label class="text-lg font-medium dark:text-neutral-200">WG_SUBNET</label>
+              <p class="text-gray-500 dark:text-neutral-400">{{ settings.WG_SUBNET }}</p>
+            </div>
+            <div>
+              <label class="text-lg font-medium dark:text-neutral-200">WG_HOST</label>
+              <p class="text-gray-500 dark:text-neutral-400">{{ settings.WG_HOST }}</p>
+            </div>
+            <div>
+              <label class="text-lg font-medium dark:text-neutral-200">WG_PORT</label>
+              <p class="text-gray-500 dark:text-neutral-400">{{ settings.WG_PORT }}</p>
+            </div>
+            <div>
+              <label class="text-lg font-medium dark:text-neutral-200">WG_HUBS</label>
+              <ul class="list-disc list-inside text-gray-500 dark:text-neutral-400">
+                <li v-for="hub in settings.WG_HUBS">{{ hub }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/vendor/vue.min.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/settings.js"></script>
+</body>
+
+</html>

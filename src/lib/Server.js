@@ -41,6 +41,11 @@ const {
   PROMETHEUS_METRICS_PASSWORD,
   DICEBEAR_TYPE,
   USE_GRAVATAR,
+  WG_ROLE,
+  WG_SUBNET,
+  WG_HUBS,
+  WG_PORT,
+  WG_HOST,
 } = require('../config');
 
 const requiresPassword = !!PASSWORD_HASH;
@@ -131,6 +136,16 @@ module.exports = class Server {
         return {
           dicebear: DICEBEAR_TYPE,
           gravatar: USE_GRAVATAR,
+        };
+      }))
+      .get('/api/settings', defineEventHandler((event) => {
+        setHeader(event, 'Content-Type', 'application/json');
+        return {
+          WG_ROLE,
+          WG_SUBNET,
+          WG_HUBS,
+          WG_PORT,
+          WG_HOST,
         };
       }))
 
