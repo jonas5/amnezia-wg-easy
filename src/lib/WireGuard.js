@@ -149,7 +149,7 @@ module.exports = class WireGuard {
 [Interface]
 PrivateKey = ${self.privateKey}
 Address = ${self.address}/24
-ListenPort = ${WG_PORT}
+ListenPort = ${self.endpoint.split(':')[1]}
 PreUp = ${WG_PRE_UP}
 PostUp = ${WG_POST_UP}
 PreDown = ${WG_PRE_DOWN}
@@ -597,4 +597,21 @@ Endpoint = ${hub.endpoint}`;
     };
   }
 
+  async updateSettings({ subnet, port }) {
+    const config = await this.getConfig();
+    const self = config.hubs[0];
+    self.subnet = subnet;
+    self.endpoint = `${WG_HOST}:${port}`;
+    await this.__saveConfig(config);
+  }
+
+  async restart() {
+    await Util.exec('wg-quick down wg0').catch(() => {});
+    await Util.exec('wg-quick up wg0').catch((err) => {
+      if (err && err.message && err.message.includes('Cannot find device "wg0"')) {
+        throw new Error('WireGuard exited with the error: Cannot find device "wg0"\\nThis usually means that your host\\'s kernel does not support WireGuard!');
+      }
+      throw err;
+    });
+  }
 };

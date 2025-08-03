@@ -36,7 +36,7 @@
             </div>
             <div>
               <label class="text-lg font-medium dark:text-neutral-200">WG_SUBNET</label>
-              <p class="text-gray-500 dark:text-neutral-400">{{ settings.WG_SUBNET }}</p>
+              <input v-model="settings.WG_SUBNET" class="w-full mt-1 rounded-md border-gray-300 dark:border-neutral-600 dark:bg-neutral-600 dark:text-neutral-200" type="text" />
             </div>
             <div>
               <label class="text-lg font-medium dark:text-neutral-200">WG_HOST</label>
@@ -44,7 +44,7 @@
             </div>
             <div>
               <label class="text-lg font-medium dark:text-neutral-200">WG_PORT</label>
-              <p class="text-gray-500 dark:text-neutral-400">{{ settings.WG_PORT }}</p>
+              <input v-model="settings.WG_PORT" class="w-full mt-1 rounded-md border-gray-300 dark:border-neutral-600 dark:bg-neutral-600 dark:text-neutral-200" type="text" />
             </div>
             <div>
               <label class="text-lg font-medium dark:text-neutral-200">WG_HUBS</label>
@@ -52,6 +52,12 @@
                 <li v-for="hub in settings.WG_HUBS">{{ hub }}</li>
               </ul>
             </div>
+          </div>
+        </div>
+        <div class="p-5 bg-gray-50 dark:bg-neutral-700/50">
+          <div class="flex gap-4">
+            <button @click="saveSettings" class="px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600">Save</button>
+            <button @click="restartWireGuard" class="px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600">Restart WireGuard</button>
           </div>
         </div>
       </div>

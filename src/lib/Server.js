@@ -350,6 +350,15 @@ module.exports = class Server {
         const { exitNode } = await readBody(event);
         await WireGuard.updatePeerExitNode({ peerId, exitNode });
         return { success: true };
+      }))
+      .put('/api/settings', defineEventHandler(async (event) => {
+        const { WG_SUBNET, WG_PORT } = await readBody(event);
+        await WireGuard.updateSettings({ subnet: WG_SUBNET, port: WG_PORT });
+        return { success: true };
+      }))
+      .post('/api/wireguard/restart', defineEventHandler(async () => {
+        await WireGuard.restart();
+        return { success: true };
       }));
 
     const safePathJoin = (base, target) => {

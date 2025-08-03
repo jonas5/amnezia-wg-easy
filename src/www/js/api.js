@@ -218,4 +218,25 @@ class API {
     });
   }
 
+  async getSettings() {
+    return this.call({
+      method: 'GET',
+      path: '/settings',
+    });
+  }
+
+  async updateSettings(settings) {
+    return this.call({
+      method: 'PUT',
+      path: '/settings',
+      body: settings,
+    });
+  }
+
+  async restartWireGuard() {
+    return this.call({
+      method: 'POST',
+      path: '/wireguard/restart',
+    });
+  }
 }
