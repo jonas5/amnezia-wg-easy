@@ -140,17 +140,52 @@
           </div>
 
           <div>
-            <!-- Client -->
-            <div v-if="clients && clients.length > 0" v-for="client in clients" :key="client.id"
+            <!-- Hubs -->
+            <div v-if="hubs && hubs.length > 0">
+              <p class="text-lg font-medium dark:text-neutral-200 px-5 pt-3">{{$t("hubs")}}</p>
+            </div>
+            <div v-if="hubs && hubs.length > 0" v-for="hub in hubs" :key="hub.id"
+              class="relative overflow-hidden border-b last:border-b-0 border-gray-100 dark:border-neutral-600 border-solid">
+              <div class="relative py-3 md:py-5 px-3 z-10 flex flex-col sm:flex-row justify-between gap-3">
+                <div class="flex gap-3 md:gap-4 w-full items-center ">
+                  <!-- Avatar -->
+                  <div class="h-10 w-10 mt-2 self-start rounded-full bg-gray-50 relative">
+                    <svg class="w-6 m-2 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                      fill="currentColor">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                  </div>
+                  <!-- Name & Info -->
+                  <div class="flex flex-col xxs:flex-row w-full gap-2">
+                    <!-- Name -->
+                    <div class="flex flex-col flex-grow gap-1">
+                      <div class="text-gray-700 dark:text-neutral-200 group text-sm md:text-base">
+                        <span>{{hub.name}}</span>
+                      </div>
+                      <!-- Address -->
+                      <div class=" block md:inline-block pb-1 md:pb-0 text-gray-500 dark:text-neutral-400 text-xs">
+                        <span>{{hub.endpoint}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Peers -->
+            <div v-if="peers && peers.length > 0">
+              <p class="text-lg font-medium dark:text-neutral-200 px-5 pt-3">{{$t("peers")}}</p>
+            </div>
+            <div v-if="peers && peers.length > 0" v-for="peer in peers" :key="peer.id"
               class="relative overflow-hidden border-b last:border-b-0 border-gray-100 dark:border-neutral-600 border-solid">
 
               <!-- Chart -->
               <div v-if="uiChartType" :class="`absolute z-0 bottom-0 left-0 right-0 h-6 ${uiChartType === 1 && 'line-chart'}`" >
-                <apexchart width="100%" height="100%" :options="chartOptionsTX" :series="client.transferTxSeries">
+                <apexchart width="100%" height="100%" :options="chartOptionsTX" :series="peer.transferTxSeries">
                 </apexchart>
               </div>
               <div v-if="uiChartType" :class="`absolute z-0 top-0 left-0 right-0 h-6 ${uiChartType === 1 && 'line-chart'}`" >
-                <apexchart width="100%" height="100%" :options="chartOptionsRX" :series="client.transferRxSeries"
+                <apexchart width="100%" height="100%" :options="chartOptionsRX" :series="peer.transferRxSeries"
                   style="transform: scaleY(-1);">
                 </apexchart>
               </div>
@@ -165,10 +200,10 @@
                       <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
                         clip-rule="evenodd" />
                     </svg>
-                    <img v-if="client.avatar" :src="client.avatar" class="w-10 rounded-full absolute top-0 left-0" />
+                    <img v-if="peer.avatar" :src="peer.avatar" class="w-10 rounded-full absolute top-0 left-0" />
 
                     <div
-                      v-if="client.latestHandshakeAt && ((new Date() - new Date(client.latestHandshakeAt) < 1000 * 60 * 10))">
+                      v-if="peer.latestHandshakeAt && ((new Date() - new Date(peer.latestHandshakeAt) < 1000 * 60 * 10))">
                       <div
                         class="animate-ping w-4 h-4 p-1 bg-red-100 dark:bg-red-100 rounded-full absolute -bottom-1 -right-1">
                       </div>
@@ -182,20 +217,20 @@
                     <!-- Name -->
                     <div class="flex flex-col flex-grow gap-1">
                       <div class="text-gray-700 dark:text-neutral-200 group text-sm md:text-base"
-                        :title="$t('createdOn') + dateTime(new Date(client.createdAt))">
+                        :title="$t('createdOn') + dateTime(new Date(peer.createdAt))">
 
                         <!-- Show -->
-                        <input v-show="clientEditNameId === client.id" v-model="clientEditName"
-                          v-on:keyup.enter="updateClientName(client, clientEditName); clientEditName = null; clientEditNameId = null;"
-                          v-on:keyup.escape="clientEditName = null; clientEditNameId = null;"
-                          :ref="'client-' + client.id + '-name'"
+                        <input v-show="peerEditNameId === peer.id" v-model="peerEditName"
+                          v-on:keyup.enter="updatePeerName(peer, peerEditName); peerEditName = null; peerEditNameId = null;"
+                          v-on:keyup.escape="peerEditName = null; peerEditNameId = null;"
+                          :ref="'peer-' + peer.id + '-name'"
                           class="rounded px-1 border-2 dark:bg-neutral-700 border-gray-100 dark:border-neutral-600 focus:border-gray-200 dark:focus:border-neutral-500 dark:placeholder:text-neutral-500 outline-none w-30" />
-                        <span v-show="clientEditNameId !== client.id"
-                          class="border-t-2 border-b-2 border-transparent">{{client.name}}</span>
+                        <span v-show="peerEditNameId !== peer.id"
+                          class="border-t-2 border-b-2 border-transparent">{{peer.name}}</span>
 
                         <!-- Edit -->
-                        <span v-show="clientEditNameId !== client.id"
-                          @click="clientEditName = client.name; clientEditNameId = client.id; setTimeout(() => $refs['client-' + client.id + '-name'][0].select(), 1);"
+                        <span v-show="peerEditNameId !== peer.id"
+                          @click="peerEditName = peer.name; peerEditNameId = peer.id; setTimeout(() => $refs['peer-' + peer.id + '-name'][0].select(), 1);"
                           class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                           <svg xmlns="http://www.w3.org/2000/svg"
                             class="h-4 w-4 inline align-middle opacity-25 hover:opacity-100" fill="none"
@@ -209,17 +244,17 @@
                       <div class=" block md:inline-block pb-1 md:pb-0 text-gray-500 dark:text-neutral-400 text-xs">
                         <span class="group">
                           <!-- Show -->
-                          <input v-show="clientEditAddressId === client.id" v-model="clientEditAddress"
-                            v-on:keyup.enter="updateClientAddress(client, clientEditAddress); clientEditAddress = null; clientEditAddressId = null;"
-                            v-on:keyup.escape="clientEditAddress = null; clientEditAddressId = null;"
-                            :ref="'client-' + client.id + '-address'"
+                          <input v-show="peerEditAddressId === peer.id" v-model="peerEditAddress"
+                            v-on:keyup.enter="updatePeerAddress(peer, peerEditAddress); peerEditAddress = null; peerEditAddressId = null;"
+                            v-on:keyup.escape="peerEditAddress = null; peerEditAddressId = null;"
+                            :ref="'peer-' + peer.id + '-address'"
                             class="rounded border-2 dark:bg-neutral-700 border-gray-100 dark:border-neutral-600 focus:border-gray-200 dark:focus:border-neutral-500 outline-none w-20 text-black dark:text-neutral-300 dark:placeholder:text-neutral-500" />
-                          <span v-show="clientEditAddressId !== client.id"
-                            class="inline-block ">{{client.address}}</span>
+                          <span v-show="peerEditAddressId !== peer.id"
+                            class="inline-block ">{{peer.address}}</span>
 
                           <!-- Edit -->
-                          <span v-show="clientEditAddressId !== client.id"
-                            @click="clientEditAddress = client.address; clientEditAddressId = client.id; setTimeout(() => $refs['client-' + client.id + '-address'][0].select(), 1);"
+                          <span v-show="peerEditAddressId !== peer.id"
+                            @click="peerEditAddress = peer.address; peerEditAddressId = peer.id; setTimeout(() => $refs['peer-' + peer.id + '-address'][0].select(), 1);"
                             class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                             <svg xmlns="http://www.w3.org/2000/svg"
                               class="h-4 w-4 inline align-middle opacity-25 hover:opacity-100" fill="none"
@@ -230,51 +265,51 @@
                           </span>
                         </span>
                         <!-- Inline Transfer TX -->
-                        <span v-if="!uiTrafficStats && client.transferTx" class="whitespace-nowrap" :title="$t('totalDownload') + bytes(client.transferTx)">
+                        <span v-if="!uiTrafficStats && peer.transferTx" class="whitespace-nowrap" :title="$t('totalDownload') + bytes(peer.transferTx)">
                           ·
                           <svg class="align-middle h-3 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
                               d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
                               clip-rule="evenodd" />
                           </svg>
-                          {{client.transferTxCurrent | bytes}}/s
+                          {{peer.transferTxCurrent | bytes}}/s
                         </span>
 
                         <!-- Inline Transfer RX -->
-                        <span v-if="!uiTrafficStats && client.transferRx" class="whitespace-nowrap" :title="$t('totalUpload') + bytes(client.transferRx)">
+                        <span v-if="!uiTrafficStats && peer.transferRx" class="whitespace-nowrap" :title="$t('totalUpload') + bytes(peer.transferRx)">
                           ·
                           <svg class="align-middle h-3 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
                               d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z"
                               clip-rule="evenodd" />
                           </svg>
-                          {{client.transferRxCurrent | bytes}}/s
+                          {{peer.transferRxCurrent | bytes}}/s
                         </span>
                         <!-- Last seen -->
-                        <span class="text-gray-400 dark:text-neutral-500 whitespace-nowrap" v-if="client.latestHandshakeAt"
-                          :title="$t('lastSeen') + dateTime(new Date(client.latestHandshakeAt))">
-                          {{!uiTrafficStats ? " · " : ""}}{{new Date(client.latestHandshakeAt) | timeago}}
+                        <span class="text-gray-400 dark:text-neutral-500 whitespace-nowrap" v-if="peer.latestHandshakeAt"
+                          :title="$t('lastSeen') + dateTime(new Date(peer.latestHandshakeAt))">
+                          {{!uiTrafficStats ? " · " : ""}}{{new Date(peer.latestHandshakeAt) | timeago}}
                         </span>
                       </div>
-                      <div v-if="enableOneTimeLinks && client.oneTimeLink !== null && client.oneTimeLink !== ''" :ref="'client-' + client.id + '-link'" class="text-gray-400 text-xs">
-                        <a :href="'./cnf/' + client.oneTimeLink + ''">{{document.location.protocol}}//{{document.location.host}}/cnf/{{client.oneTimeLink}}</a>
+                      <div v-if="enableOneTimeLinks && peer.oneTimeLink !== null && peer.oneTimeLink !== ''" :ref="'peer-' + peer.id + '-link'" class="text-gray-400 text-xs">
+                        <a :href="'./cnf/' + peer.oneTimeLink + ''">{{document.location.protocol}}//{{document.location.host}}/cnf/{{peer.oneTimeLink}}</a>
                       </div>
                       <!-- Expire Date -->
                       <div v-show="enableExpireTime" class=" block md:inline-block pb-1 md:pb-0 text-gray-500 dark:text-neutral-400 text-xs">
                         <span class="group">
                           <!-- Show -->
-                          <input v-show="clientEditExpireDateId === client.id" v-model="clientEditExpireDate"
-                            v-on:keyup.enter="updateClientExpireDate(client, clientEditExpireDate); clientEditExpireDate = null; clientEditExpireDateId = null;"
-                            v-on:keyup.escape="clientEditExpireDate = null; clientEditExpireDateId = null;"
-                            :ref="'client-' + client.id + '-expire'"
+                          <input v-show="peerEditExpireDateId === peer.id" v-model="peerEditExpireDate"
+                            v-on:keyup.enter="updatePeerExpireDate(peer, peerEditExpireDate); peerEditExpireDate = null; peerEditExpireDateId = null;"
+                            v-on:keyup.escape="peerEditExpireDate = null; peerEditExpireDateId = null;"
+                            :ref="'peer-' + peer.id + '-expire'"
                             type="text"
                             class="rounded border-2 dark:bg-neutral-700 border-gray-100 dark:border-neutral-600 focus:border-gray-200 dark:focus:border-neutral-500 outline-none w-70 text-black dark:text-neutral-300 dark:placeholder:text-neutral-500 text-xs p-0" />
-                          <span v-show="clientEditExpireDateId !== client.id"
-                            class="inline-block ">{{client.expiredAt  | expiredDateFormat}}</span>
+                          <span v-show="peerEditExpireDateId !== peer.id"
+                            class="inline-block ">{{peer.expiredAt  | expiredDateFormat}}</span>
 
                           <!-- Edit -->
-                          <span v-show="clientEditExpireDateId !== client.id"
-                            @click="clientEditExpireDate = client.expiredAt ? client.expiredAt.toISOString().slice(0, 10) : 'yyyy-mm-dd'; clientEditExpireDateId = client.id; setTimeout(() => $refs['client-' + client.id + '-expire'][0].select(), 1);"
+                          <span v-show="peerEditExpireDateId !== peer.id"
+                            @click="peerEditExpireDate = peer.expiredAt ? peer.expiredAt.toISOString().slice(0, 10) : 'yyyy-mm-dd'; peerEditExpireDateId = peer.id; setTimeout(() => $refs['peer-' + peer.id + '-expire'][0].select(), 1);"
                             class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                             <svg xmlns="http://www.w3.org/2000/svg"
                               class="h-4 w-4 inline align-middle opacity-25 hover:opacity-100" fill="none"
@@ -292,8 +327,8 @@
                       class="flex gap-2 items-center shrink-0 text-gray-400 dark:text-neutral-400 text-xs mt-px justify-end">
 
                       <!-- Transfer TX -->
-                      <div class="min-w-20 md:min-w-24" v-if="client.transferTx">
-                        <span class="flex gap-1" :title="$t('totalDownload') + bytes(client.transferTx)">
+                      <div class="min-w-20 md:min-w-24" v-if="peer.transferTx">
+                        <span class="flex gap-1" :title="$t('totalDownload') + bytes(peer.transferTx)">
                           <svg class="align-middle h-3 inline mt-0.5" xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
@@ -301,18 +336,18 @@
                               clip-rule="evenodd" />
                           </svg>
                           <div>
-                            <span class="text-gray-700 dark:text-neutral-200">{{client.transferTxCurrent |
+                            <span class="text-gray-700 dark:text-neutral-200">{{peer.transferTxCurrent |
                               bytes}}/s</span>
                             <!-- Total TX -->
-                            <br><span class="font-regular" style="font-size:0.85em">{{bytes(client.transferTx)}}</span>
+                            <br><span class="font-regular" style="font-size:0.85em">{{bytes(peer.transferTx)}}</span>
                           </div>
                         </span>
 
                       </div>
 
                       <!-- Transfer RX -->
-                      <div class="min-w-20 md:min-w-24" v-if="client.transferRx">
-                        <span class="flex gap-1" :title="$t('totalUpload') + bytes(client.transferRx)">
+                      <div class="min-w-20 md:min-w-24" v-if="peer.transferRx">
+                        <span class="flex gap-1" :title="$t('totalUpload') + bytes(peer.transferRx)">
 
                           <svg class="align-middle h-3 inline mt-0.5" xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20" fill="currentColor">
@@ -321,10 +356,10 @@
                               clip-rule="evenodd" />
                           </svg>
                           <div>
-                            <span class="text-gray-700 dark:text-neutral-200">{{client.transferRxCurrent |
+                            <span class="text-gray-700 dark:text-neutral-200">{{peer.transferRxCurrent |
                               bytes}}/s</span>
                             <!-- Total RX -->
-                            <br><span class="font-regular" style="font-size:0.85em">{{bytes(client.transferRx)}}</span>
+                            <br><span class="font-regular" style="font-size:0.85em">{{bytes(peer.transferRx)}}</span>
                           </div>
                         </span>
                       </div>
@@ -338,12 +373,12 @@
                   <div class="text-gray-400 dark:text-neutral-400 flex gap-1 items-center justify-between">
 
                     <!-- Enable/Disable -->
-                    <div @click="disableClient(client)" v-if="client.enabled === true" :title="$t('disableClient')"
+                    <div @click="disablePeer(peer)" v-if="peer.enabled === true" :title="$t('disablePeer')"
                       class="inline-block align-middle rounded-full w-10 h-6 mr-1 bg-red-800 cursor-pointer hover:bg-red-700 transition-all">
                       <div class="rounded-full w-4 h-4 m-1 ml-5 bg-white"></div>
                     </div>
 
-                    <div @click="enableClient(client)" v-if="client.enabled === false" :title="$t('enableClient')"
+                    <div @click="enablePeer(peer)" v-if="peer.enabled === false" :title="$t('enablePeer')"
                       class="inline-block align-middle rounded-full w-10 h-6 mr-1 bg-gray-200 dark:bg-neutral-400 cursor-pointer hover:bg-gray-300 dark:hover:bg-neutral-500 transition-all">
 
                       <div class="rounded-full w-4 h-4 m-1 bg-white"></div>
@@ -351,14 +386,14 @@
 
                     <!-- Show QR-->
 
-                    <button :disabled="!client.downloadableConfig"
+                    <button :disabled="!peer.downloadableConfig"
                       class="align-middle bg-gray-100 dark:bg-neutral-600 dark:text-neutral-300 p-2 rounded transition"
                       :class="{
-                        'hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white': client.downloadableConfig,
-                        'is-disabled': !client.downloadableConfig
+                        'hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white': peer.downloadableConfig,
+                        'is-disabled': !peer.downloadableConfig
                       }"
-                      :title="!client.downloadableConfig ? $t('noPrivKey') : $t('showQR')"
-                      @click="qrcode = `./api/wireguard/client/${client.id}/qrcode.svg`">
+                      :title="!peer.downloadableConfig ? $t('noPrivKey') : $t('showQR')"
+                      @click="qrcode = `./api/wireguard/peer/${peer.id}/qrcode.svg`">
                       <svg class="w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -367,16 +402,16 @@
                     </button>
 
                     <!-- Download Config -->
-                    <a :disabled="!client.downloadableConfig"
-                      :href="'./api/wireguard/client/' + client.id + '/configuration'"
-                      :download="client.downloadableConfig ? 'configuration' : null"
+                    <a :disabled="!peer.downloadableConfig"
+                      :href="'./api/wireguard/peer/' + peer.id + '/configuration'"
+                      :download="peer.downloadableConfig ? 'configuration' : null"
                       class="align-middle inline-block bg-gray-100 dark:bg-neutral-600 dark:text-neutral-300 p-2 rounded transition"
                       :class="{
-                        'hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white': client.downloadableConfig,
-                        'is-disabled': !client.downloadableConfig
+                        'hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white': peer.downloadableConfig,
+                        'is-disabled': !peer.downloadableConfig
                       }"
-                      :title="!client.downloadableConfig ? $t('noPrivKey') : $t('downloadConfig')"
-                      @click="if(!client.downloadableConfig) { $event.preventDefault(); }">
+                      :title="!peer.downloadableConfig ? $t('noPrivKey') : $t('downloadConfig')"
+                      @click="if(!peer.downloadableConfig) { $event.preventDefault(); }">
                       <svg class="w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -385,14 +420,14 @@
                     </a>
 
                     <!-- Short OneTime Link -->
-                    <button v-if="enableOneTimeLinks" :disabled="!client.downloadableConfig"
+                    <button v-if="enableOneTimeLinks" :disabled="!peer.downloadableConfig"
                       class="align-middle inline-block bg-gray-100 dark:bg-neutral-600 dark:text-neutral-300 p-2 rounded transition"
                       :class="{
-                        'hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white': client.downloadableConfig,
-                        'is-disabled': !client.downloadableConfig
+                        'hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white': peer.downloadableConfig,
+                        'is-disabled': !peer.downloadableConfig
                       }"
-                      :title="!client.downloadableConfig ? $t('noPrivKey') : $t('OneTimeLink')"
-                      @click="if(client.downloadableConfig) { showOneTimeLink(client); }">
+                      :title="!peer.downloadableConfig ? $t('noPrivKey') : $t('OneTimeLink')"
+                      @click="if(peer.downloadableConfig) { showOneTimeLink(peer); }">
                       <svg class="w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -404,7 +439,7 @@
 
                     <button
                       class="align-middle bg-gray-100 dark:bg-neutral-600 dark:text-neutral-300 hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white p-2 rounded transition"
-                      :title="$t('deleteClient')" @click="clientDelete = client">
+                      :title="$t('deletePeer')" @click="peerDelete = peer">
                       <svg class="w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd"
                           d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -417,21 +452,21 @@
               </div>
 
             </div>
-            <div v-if="clients && clients.length === 0">
+            <div v-if="peers && peers.length === 0">
               <p class="text-center m-10 text-gray-400 dark:text-neutral-400 text-sm">
-                {{$t("noClients")}}<br /><br />
-                <button @click="clientCreate = true; clientCreateName = ''; clientExpiredDate = '';"
+                {{$t("noPeers")}}<br /><br />
+                <button @click="peerCreate = true; peerCreateName = ''; peerCreateRole = 'peer'; peerCreateEndpoint = ''; peerExpiredDate = '';"
                   class="bg-red-800 hover:bg-red-700 text-white border-2 border-none py-2 px-4 rounded inline-flex items-center transition">
                   <svg class="w-4 mr-2" inline xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <span class="text-sm">{{$t("newClient")}}</span>
+                  <span class="text-sm">{{$t("newPeer")}}</span>
                 </button>
               </p>
             </div>
-            <div v-if="clients === null" class="text-gray-200 dark:text-red-300 p-5">
+            <div v-if="peers === null" class="text-gray-200 dark:text-red-300 p-5">
               <svg class="w-5 animate-spin mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                 fill="currentColor">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -460,34 +495,12 @@
         </div>
 
         <!-- Create Dialog -->
-        <div v-if="clientCreate" class="fixed z-10 inset-0 overflow-y-auto">
+        <div v-if="peerCreate" class="fixed z-10 inset-0 overflow-y-auto">
           <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <!--
-        Background overlay, show/hide based on modal state.
-
-        Entering: "ease-out duration-300"
-          From: "opacity-0"
-          To: "opacity-100"
-        Leaving: "ease-in duration-200"
-          From: "opacity-100"
-          To: "opacity-0"
-      -->
             <div class="fixed inset-0 transition-opacity" aria-hidden="true">
               <div class="absolute inset-0 bg-gray-500 dark:bg-black opacity-75 dark:opacity-50"></div>
             </div>
-
-            <!-- This element is to trick the browser into centering the modal contents. -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <!--
-        Modal panel, show/hide based on modal state.
-
-        Entering: "ease-out duration-300"
-          From: "opacity-0 tranneutral-y-4 sm:tranneutral-y-0 sm:scale-95"
-          To: "opacity-100 tranneutral-y-0 sm:scale-100"
-        Leaving: "ease-in duration-200"
-          From: "opacity-100 tranneutral-y-0 sm:scale-100"
-          To: "opacity-0 tranneutral-y-4 sm:tranneutral-y-0 sm:scale-95"
-      -->
             <div
               class="inline-block align-bottom bg-white dark:bg-neutral-700 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full"
               role="dialog" aria-modal="true" aria-labelledby="modal-headline">
@@ -503,13 +516,28 @@
                   </div>
                   <div class="flex-grow mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-neutral-200" id="modal-headline">
-                      {{$t("newClient")}}
+                      {{$t("newPeer")}}
                     </h3>
                     <div class="mt-2">
                       <p class="text-sm text-gray-500">
                         <input
                           class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
-                          type="text" v-model.trim="clientCreateName" :placeholder="$t('name')" />
+                          type="text" v-model.trim="peerCreateName" :placeholder="$t('name')" />
+                      </p>
+                    </div>
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-500">
+                        <select v-model="peerCreateRole" class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full">
+                          <option value="peer">{{$t("peer")}}</option>
+                          <option value="hub">{{$t("hub")}}</option>
+                        </select>
+                      </p>
+                    </div>
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-500">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="peerCreateEndpoint" :placeholder="$t('endpoint')" />
                       </p>
                     </div>
                     <div class="mt-2" v-show="enableExpireTime">
@@ -519,14 +547,14 @@
                         </label>
                         <input
                           class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
-                          type="date" v-model.trim="clientExpiredDate" :placeholder="$t('expireDate')" name="expireDate"/>
+                          type="date" v-model.trim="peerExpiredDate" :placeholder="$t('expireDate')" name="expireDate"/>
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
               <div class="bg-gray-50 dark:bg-neutral-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button v-if="clientCreateName.length" type="button" @click="createClient(); clientCreate = null"
+                <button v-if="peerCreateName.length" type="button" @click="createPeer(); peerCreate = null"
                   class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-800 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
                   {{$t("create")}}
                 </button>
@@ -534,7 +562,7 @@
                   class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-200 dark:bg-neutral-400 text-base font-medium text-white dark:text-neutral-300 sm:ml-3 sm:w-auto sm:text-sm cursor-not-allowed">
                   {{$t("create")}}
                 </button>
-                <button type="button" @click="clientCreate = null"
+                <button type="button" @click="peerCreate = null"
                   class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-neutral-500 shadow-sm px-4 py-2 bg-white dark:bg-neutral-500 text-base font-medium text-gray-700 dark:text-neutral-50 hover:bg-gray-50 dark:hover:bg-neutral-600 dark:hover:border-neutral-600 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                   {{$t("cancel")}}
                 </button>
@@ -544,34 +572,12 @@
         </div>
 
         <!-- Delete Dialog -->
-        <div v-if="clientDelete" class="fixed z-10 inset-0 overflow-y-auto">
+        <div v-if="peerDelete" class="fixed z-10 inset-0 overflow-y-auto">
           <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <!--
-        Background overlay, show/hide based on modal state.
-
-        Entering: "ease-out duration-300"
-          From: "opacity-0"
-          To: "opacity-100"
-        Leaving: "ease-in duration-200"
-          From: "opacity-100"
-          To: "opacity-0"
-      -->
             <div class="fixed inset-0 transition-opacity" aria-hidden="true">
               <div class="absolute inset-0 bg-gray-500 dark:bg-black opacity-75 dark:opacity-50"></div>
             </div>
-
-            <!-- This element is to trick the browser into centering the modal contents. -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <!--
-        Modal panel, show/hide based on modal state.
-
-        Entering: "ease-out duration-300"
-          From: "opacity-0 tranneutral-y-4 sm:tranneutral-y-0 sm:scale-95"
-          To: "opacity-100 tranneutral-y-0 sm:scale-100"
-        Leaving: "ease-in duration-200"
-          From: "opacity-100 tranneutral-y-0 sm:scale-100"
-          To: "opacity-0 tranneutral-y-4 sm:tranneutral-y-0 sm:scale-95"
-      -->
             <div
               class="inline-block align-bottom bg-white dark:bg-neutral-700 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full"
               role="dialog" aria-modal="true" aria-labelledby="modal-headline">
@@ -579,7 +585,6 @@
                 <div class="sm:flex sm:items-start">
                   <div
                     class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <!-- Heroicon name: outline/exclamation -->
                     <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                       stroke="currentColor" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -588,22 +593,22 @@
                   </div>
                   <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-neutral-200" id="modal-headline">
-                      {{$t("deleteClient")}}
+                      {{$t("deletePeer")}}
                     </h3>
                     <div class="mt-2">
                       <p class="text-sm text-gray-500 dark:text-neutral-300">
-                        {{$t("deleteDialog1")}} <strong>{{clientDelete.name}}</strong>? {{$t("deleteDialog2")}}
+                        {{$t("deleteDialog1")}} <strong>{{peerDelete.name}}</strong>? {{$t("deleteDialog2")}}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
               <div class="bg-gray-50 dark:bg-neutral-600 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button type="button" @click="deleteClient(clientDelete); clientDelete = null"
+                <button type="button" @click="deletePeer(peerDelete); peerDelete = null"
                   class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 dark:bg-red-600 text-base font-medium text-white dark:text-white hover:bg-red-700 dark:hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
-                  {{$t("deleteClient")}}
+                  {{$t("deletePeer")}}
                 </button>
-                <button type="button" @click="clientDelete = null"
+                <button type="button" @click="peerDelete = null"
                   class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-neutral-500 shadow-sm px-4 py-2 bg-white dark:bg-neutral-500 text-base font-medium text-gray-700 dark:text-neutral-50 hover:bg-gray-50 dark:hover:bg-neutral-600 dark:hover:border-neutral-600 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                   {{$t("cancel")}}
                 </button>

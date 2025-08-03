@@ -72,18 +72,21 @@ new Vue({
     remember: false,
     rememberMeEnabled: false,
 
-    clients: null,
-    clientsPersist: {},
-    clientDelete: null,
-    clientCreate: null,
-    clientCreateName: '',
-    clientExpiredDate: '',
-    clientEditName: null,
-    clientEditNameId: null,
-    clientEditAddress: null,
-    clientEditAddressId: null,
-    clientEditExpireDate: null,
-    clientEditExpireDateId: null,
+    peers: null,
+    peersPersist: {},
+    hubs: null,
+    peerDelete: null,
+    peerCreate: null,
+    peerCreateName: '',
+    peerCreateRole: 'peer',
+    peerCreateEndpoint: '',
+    peerExpiredDate: '',
+    peerEditName: null,
+    peerEditNameId: null,
+    peerEditAddress: null,
+    peerEditAddressId: null,
+    peerEditExpireDate: null,
+    peerEditExpireDateId: null,
     qrcode: null,
 
     currentRelease: null,
@@ -93,12 +96,12 @@ new Vue({
 
     uiChartType: 0,
     avatarSettings: {
-      'dicebear': null,
-      'gravatar': false,
+      dicebear: null,
+      gravatar: false,
     },
     enableOneTimeLinks: false,
-    enableSortClient: false,
-    sortClient: true, // Sort clients by name, true = asc, false = desc
+    enableSortPeers: false,
+    sortPeers: true, // Sort peers by name, true = asc, false = desc
     enableExpireTime: false,
 
     uiShowCharts: localStorage.getItem('uiShowCharts') === '1',
@@ -202,69 +205,69 @@ new Vue({
     } = {}) {
       if (!this.authenticated) return;
 
-      const clients = await this.api.getClients();
-      this.clients = clients.map((client) => {
-        if (client.name.includes('@') && client.name.includes('.') && this.avatarSettings.gravatar) {
-          client.avatar = `https://gravatar.com/avatar/${sha256(client.name.toLowerCase().trim())}.jpg`;
+      const [peers, hubs] = await Promise.all([
+        this.api.getPeers(),
+        this.api.getHubs(),
+      ]);
+
+      this.peers = peers.map((peer) => {
+        if (peer.name.includes('@') && peer.name.includes('.') && this.avatarSettings.gravatar) {
+          peer.avatar = `https://gravatar.com/avatar/${sha256(peer.name.toLowerCase().trim())}.jpg`;
         } else if (this.avatarSettings.dicebear) {
-          client.avatar = `https://api.dicebear.com/9.x/${this.avatarSettings.dicebear}/svg?seed=${sha256(client.name.toLowerCase().trim())}`
+          peer.avatar = `https://api.dicebear.com/9.x/${this.avatarSettings.dicebear}/svg?seed=${sha256(peer.name.toLowerCase().trim())}`;
         }
 
-        if (!this.clientsPersist[client.id]) {
-          this.clientsPersist[client.id] = {};
-          this.clientsPersist[client.id].transferRxHistory = Array(50).fill(0);
-          this.clientsPersist[client.id].transferRxPrevious = client.transferRx;
-          this.clientsPersist[client.id].transferTxHistory = Array(50).fill(0);
-          this.clientsPersist[client.id].transferTxPrevious = client.transferTx;
+        if (!this.peersPersist[peer.id]) {
+          this.peersPersist[peer.id] = {};
+          this.peersPersist[peer.id].transferRxHistory = Array(50).fill(0);
+          this.peersPersist[peer.id].transferRxPrevious = peer.transferRx;
+          this.peersPersist[peer.id].transferTxHistory = Array(50).fill(0);
+          this.peersPersist[peer.id].transferTxPrevious = peer.transferTx;
         }
 
-        // Debug
-        // client.transferRx = this.clientsPersist[client.id].transferRxPrevious + Math.random() * 1000;
-        // client.transferTx = this.clientsPersist[client.id].transferTxPrevious + Math.random() * 1000;
-        // client.latestHandshakeAt = new Date();
-        // this.requiresPassword = true;
-
-        this.clientsPersist[client.id].transferRxCurrent = client.transferRx - this.clientsPersist[client.id].transferRxPrevious;
-        this.clientsPersist[client.id].transferRxPrevious = client.transferRx;
-        this.clientsPersist[client.id].transferTxCurrent = client.transferTx - this.clientsPersist[client.id].transferTxPrevious;
-        this.clientsPersist[client.id].transferTxPrevious = client.transferTx;
+        this.peersPersist[peer.id].transferRxCurrent = peer.transferRx - this.peersPersist[peer.id].transferRxPrevious;
+        this.peersPersist[peer.id].transferRxPrevious = peer.transferRx;
+        this.peersPersist[peer.id].transferTxCurrent = peer.transferTx - this.peersPersist[peer.id].transferTxPrevious;
+        this.peersPersist[peer.id].transferTxPrevious = peer.transferTx;
 
         if (updateCharts) {
-          this.clientsPersist[client.id].transferRxHistory.push(this.clientsPersist[client.id].transferRxCurrent);
-          this.clientsPersist[client.id].transferRxHistory.shift();
+          this.peersPersist[peer.id].transferRxHistory.push(this.peersPersist[peer.id].transferRxCurrent);
+          this.peersPersist[peer.id].transferRxHistory.shift();
 
-          this.clientsPersist[client.id].transferTxHistory.push(this.clientsPersist[client.id].transferTxCurrent);
-          this.clientsPersist[client.id].transferTxHistory.shift();
+          this.peersPersist[peer.id].transferTxHistory.push(this.peersPersist[peer.id].transferTxCurrent);
+          this.peersPersist[peer.id].transferTxHistory.shift();
 
-          this.clientsPersist[client.id].transferTxSeries = [{
+          this.peersPersist[peer.id].transferTxSeries = [{
             name: 'Tx',
-            data: this.clientsPersist[client.id].transferTxHistory,
+            data: this.peersPersist[peer.id].transferTxHistory,
           }];
 
-          this.clientsPersist[client.id].transferRxSeries = [{
+          this.peersPersist[peer.id].transferRxSeries = [{
             name: 'Rx',
-            data: this.clientsPersist[client.id].transferRxHistory,
+            data: this.peersPersist[peer.id].transferRxHistory,
           }];
 
-          client.transferTxHistory = this.clientsPersist[client.id].transferTxHistory;
-          client.transferRxHistory = this.clientsPersist[client.id].transferRxHistory;
-          client.transferMax = Math.max(...client.transferTxHistory, ...client.transferRxHistory);
+          peer.transferTxHistory = this.peersPersist[peer.id].transferTxHistory;
+          peer.transferRxHistory = this.peersPersist[peer.id].transferRxHistory;
+          peer.transferMax = Math.max(...peer.transferTxHistory, ...peer.transferRxHistory);
 
-          client.transferTxSeries = this.clientsPersist[client.id].transferTxSeries;
-          client.transferRxSeries = this.clientsPersist[client.id].transferRxSeries;
+          peer.transferTxSeries = this.peersPersist[peer.id].transferTxSeries;
+          peer.transferRxSeries = this.peersPersist[peer.id].transferRxSeries;
         }
 
-        client.transferTxCurrent = this.clientsPersist[client.id].transferTxCurrent;
-        client.transferRxCurrent = this.clientsPersist[client.id].transferRxCurrent;
+        peer.transferTxCurrent = this.peersPersist[peer.id].transferTxCurrent;
+        peer.transferRxCurrent = this.peersPersist[peer.id].transferRxCurrent;
 
-        client.hoverTx = this.clientsPersist[client.id].hoverTx;
-        client.hoverRx = this.clientsPersist[client.id].hoverRx;
+        peer.hoverTx = this.peersPersist[peer.id].hoverTx;
+        peer.hoverRx = this.peersPersist[peer.id].hoverRx;
 
-        return client;
+        return peer;
       });
 
-      if (this.enableSortClient) {
-        this.clients = sortByProperty(this.clients, 'name', this.sortClient);
+      this.hubs = hubs;
+
+      if (this.enableSortPeers) {
+        this.peers = sortByProperty(this.peers, 'name', this.sortPeers);
       }
     },
     login(e) {
@@ -298,53 +301,58 @@ new Vue({
       this.api.deleteSession()
         .then(() => {
           this.authenticated = false;
-          this.clients = null;
+          this.peers = null;
+          this.hubs = null;
         })
         .catch((err) => {
           alert(err.message || err.toString());
         });
     },
-    createClient() {
-      const name = this.clientCreateName;
-      const expiredDate = this.clientExpiredDate;
+    createPeer() {
+      const name = this.peerCreateName;
+      const role = this.peerCreateRole;
+      const endpoint = this.peerCreateEndpoint;
+      const expiredDate = this.peerExpiredDate;
       if (!name) return;
 
-      this.api.createClient({ name, expiredDate })
+      this.api.createPeer({
+        name, role, endpoint, expiredDate,
+      })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    deleteClient(client) {
-      this.api.deleteClient({ clientId: client.id })
+    deletePeer(peer) {
+      this.api.deletePeer({ peerId: peer.id })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    showOneTimeLink(client) {
-      this.api.showOneTimeLink({ clientId: client.id })
+    showOneTimeLink(peer) {
+      this.api.showOneTimeLink({ peerId: peer.id })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    enableClient(client) {
-      this.api.enableClient({ clientId: client.id })
+    enablePeer(peer) {
+      this.api.enablePeer({ peerId: peer.id })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    disableClient(client) {
-      this.api.disableClient({ clientId: client.id })
+    disablePeer(peer) {
+      this.api.disablePeer({ peerId: peer.id })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    updateClientName(client, name) {
-      this.api.updateClientName({ clientId: client.id, name })
+    updatePeerName(peer, name) {
+      this.api.updatePeerName({ peerId: peer.id, name })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    updateClientAddress(client, address) {
-      this.api.updateClientAddress({ clientId: client.id, address })
+    updatePeerAddress(peer, address) {
+      this.api.updatePeerAddress({ peerId: peer.id, address })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
-    updateClientExpireDate(client, expireDate) {
-      this.api.updateClientExpireDate({ clientId: client.id, expireDate })
+    updatePeerExpireDate(peer, expireDate) {
+      this.api.updatePeerExpireDate({ peerId: peer.id, expireDate })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
@@ -457,10 +465,10 @@ new Vue({
 
     this.api.getUiSortClients()
       .then((res) => {
-        this.enableSortClient = res;
+        this.enableSortPeers = res;
       })
       .catch(() => {
-        this.enableSortClient = false;
+        this.enableSortPeers = false;
       });
 
     this.api.getWGEnableExpireTime()
@@ -476,10 +484,10 @@ new Vue({
         this.avatarSettings = res;
       })
       .catch(() => {
-          this.avatarSettings = {
-            'dicebear': null,
-            'gravatar': false,
-          };
+        this.avatarSettings = {
+          dicebear: null,
+          gravatar: false,
+        };
       });
 
     Promise.resolve().then(async () => {

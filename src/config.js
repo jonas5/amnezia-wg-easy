@@ -19,6 +19,9 @@ module.exports.WG_DEFAULT_DNS = typeof process.env.WG_DEFAULT_DNS === 'string'
   ? process.env.WG_DEFAULT_DNS
   : '1.1.1.1';
 module.exports.WG_ALLOWED_IPS = process.env.WG_ALLOWED_IPS || '0.0.0.0/0, ::/0';
+module.exports.WG_ROLE = process.env.WG_ROLE || 'peer';
+module.exports.WG_SUBNET = process.env.WG_SUBNET || '10.8.0.x';
+module.exports.WG_HUBS = process.env.WG_HUBS ? process.env.WG_HUBS.split(',') : [];
 
 module.exports.WG_PRE_UP = process.env.WG_PRE_UP || '';
 module.exports.WG_POST_UP = process.env.WG_POST_UP || `

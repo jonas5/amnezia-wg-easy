@@ -131,7 +131,7 @@ module.exports = class Server {
         return {
           dicebear: DICEBEAR_TYPE,
           gravatar: USE_GRAVATAR,
-        }
+        };
       }))
 
       // Authentication
@@ -231,94 +231,100 @@ module.exports = class Server {
         debug(`Deleted Session: ${sessionId}`);
         return { success: true };
       }))
-      .get('/api/wireguard/client', defineEventHandler(() => {
-        return WireGuard.getClients();
+      .get('/api/wireguard/peer', defineEventHandler(() => {
+        return WireGuard.getPeers();
       }))
-      .get('/api/wireguard/client/:clientId/qrcode.svg', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        const svg = await WireGuard.getClientQRCodeSVG({ clientId });
+      .get('/api/wireguard/hub', defineEventHandler(() => {
+        return WireGuard.getHubs();
+      }))
+      .get('/api/wireguard/peer/:peerId/qrcode.svg', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        const svg = await WireGuard.getPeerQRCodeSVG({ peerId });
         setHeader(event, 'Content-Type', 'image/svg+xml');
         return svg;
       }))
-      .get('/api/wireguard/client/:clientId/configuration', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        const client = await WireGuard.getClient({ clientId });
-        const config = await WireGuard.getClientConfiguration({ clientId });
-        const configName = client.name
+      .get('/api/wireguard/peer/:peerId/configuration', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        const peer = await WireGuard.getPeer({ peerId });
+        const config = await WireGuard.getPeerConfiguration({ peerId });
+        const configName = peer.name
           .replace(/[^a-zA-Z0-9_=+.-]/g, '-')
           .replace(/(-{2,}|-$)/g, '-')
           .replace(/-$/, '')
           .substring(0, 32);
-        setHeader(event, 'Content-Disposition', `attachment; filename="${configName || clientId}.conf"`);
+        setHeader(event, 'Content-Disposition', `attachment; filename="${configName || peerId}.conf"`);
         setHeader(event, 'Content-Type', 'text/plain');
         return config;
       }))
-      .post('/api/wireguard/client', defineEventHandler(async (event) => {
-        const { name } = await readBody(event);
-        const { expiredDate } = await readBody(event);
-        await WireGuard.createClient({ name, expiredDate });
+      .post('/api/wireguard/peer', defineEventHandler(async (event) => {
+        const {
+          name, role, endpoint, expiredDate,
+        } = await readBody(event);
+        await WireGuard.createPeer({
+          name, role, endpoint, expiredDate,
+        });
         return { success: true };
       }))
-      .delete('/api/wireguard/client/:clientId', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        await WireGuard.deleteClient({ clientId });
+      .delete('/api/wireguard/peer/:peerId', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        await WireGuard.deletePeer({ peerId });
         return { success: true };
       }))
-      .post('/api/wireguard/client/:clientId/enable', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        if (clientId === '__proto__' || clientId === 'constructor' || clientId === 'prototype') {
+      .post('/api/wireguard/peer/:peerId/enable', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
           throw createError({ status: 403 });
         }
-        await WireGuard.enableClient({ clientId });
+        await WireGuard.enablePeer({ peerId });
         return { success: true };
       }))
-      .post('/api/wireguard/client/:clientId/generateOneTimeLink', defineEventHandler(async (event) => {
+      .post('/api/wireguard/peer/:peerId/generateOneTimeLink', defineEventHandler(async (event) => {
         if (WG_ENABLE_ONE_TIME_LINKS === 'false') {
           throw createError({
             status: 404,
             message: 'Invalid state',
           });
         }
-        const clientId = getRouterParam(event, 'clientId');
-        if (clientId === '__proto__' || clientId === 'constructor' || clientId === 'prototype') {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
           throw createError({ status: 403 });
         }
-        await WireGuard.generateOneTimeLink({ clientId });
+        await WireGuard.generateOneTimeLink({ peerId });
         return { success: true };
       }))
-      .post('/api/wireguard/client/:clientId/disable', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        if (clientId === '__proto__' || clientId === 'constructor' || clientId === 'prototype') {
+      .post('/api/wireguard/peer/:peerId/disable', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
           throw createError({ status: 403 });
         }
-        await WireGuard.disableClient({ clientId });
+        await WireGuard.disablePeer({ peerId });
         return { success: true };
       }))
-      .put('/api/wireguard/client/:clientId/name', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        if (clientId === '__proto__' || clientId === 'constructor' || clientId === 'prototype') {
+      .put('/api/wireguard/peer/:peerId/name', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
           throw createError({ status: 403 });
         }
         const { name } = await readBody(event);
-        await WireGuard.updateClientName({ clientId, name });
+        await WireGuard.updatePeerName({ peerId, name });
         return { success: true };
       }))
-      .put('/api/wireguard/client/:clientId/address', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        if (clientId === '__proto__' || clientId === 'constructor' || clientId === 'prototype') {
+      .put('/api/wireguard/peer/:peerId/address', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
           throw createError({ status: 403 });
         }
         const { address } = await readBody(event);
-        await WireGuard.updateClientAddress({ clientId, address });
+        await WireGuard.updatePeerAddress({ peerId, address });
         return { success: true };
       }))
-      .put('/api/wireguard/client/:clientId/expireDate', defineEventHandler(async (event) => {
-        const clientId = getRouterParam(event, 'clientId');
-        if (clientId === '__proto__' || clientId === 'constructor' || clientId === 'prototype') {
+      .put('/api/wireguard/peer/:peerId/expireDate', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
           throw createError({ status: 403 });
         }
         const { expireDate } = await readBody(event);
-        await WireGuard.updateClientExpireDate({ clientId, expireDate });
+        await WireGuard.updatePeerExpireDate({ peerId, expireDate });
         return { success: true };
       }));
 

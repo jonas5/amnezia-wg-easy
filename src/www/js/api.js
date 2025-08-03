@@ -107,79 +107,90 @@ class API {
     });
   }
 
-  async getClients() {
+  async getPeers() {
     return this.call({
       method: 'get',
-      path: '/wireguard/client',
-    }).then((clients) => clients.map((client) => ({
-      ...client,
-      createdAt: new Date(client.createdAt),
-      updatedAt: new Date(client.updatedAt),
-      expiredAt: client.expiredAt !== null
-        ? new Date(client.expiredAt)
+      path: '/wireguard/peer',
+    }).then((peers) => peers.map((peer) => ({
+      ...peer,
+      createdAt: new Date(peer.createdAt),
+      updatedAt: new Date(peer.updatedAt),
+      expiredAt: peer.expiredAt !== null
+        ? new Date(peer.expiredAt)
         : null,
-      latestHandshakeAt: client.latestHandshakeAt !== null
-        ? new Date(client.latestHandshakeAt)
+      latestHandshakeAt: peer.latestHandshakeAt !== null
+        ? new Date(peer.latestHandshakeAt)
         : null,
     })));
   }
 
-  async createClient({ name, expiredDate }) {
+  async getHubs() {
     return this.call({
-      method: 'post',
-      path: '/wireguard/client',
-      body: { name, expiredDate },
+      method: 'get',
+      path: '/wireguard/hub',
     });
   }
 
-  async deleteClient({ clientId }) {
+  async createPeer({
+    name, role, endpoint, expiredDate,
+  }) {
+    return this.call({
+      method: 'post',
+      path: '/wireguard/peer',
+      body: {
+        name, role, endpoint, expiredDate,
+      },
+    });
+  }
+
+  async deletePeer({ peerId }) {
     return this.call({
       method: 'delete',
-      path: `/wireguard/client/${clientId}`,
+      path: `/wireguard/peer/${peerId}`,
     });
   }
 
-  async showOneTimeLink({ clientId }) {
+  async showOneTimeLink({ peerId }) {
     return this.call({
       method: 'post',
-      path: `/wireguard/client/${clientId}/generateOneTimeLink`,
+      path: `/wireguard/peer/${peerId}/generateOneTimeLink`,
     });
   }
 
-  async enableClient({ clientId }) {
+  async enablePeer({ peerId }) {
     return this.call({
       method: 'post',
-      path: `/wireguard/client/${clientId}/enable`,
+      path: `/wireguard/peer/${peerId}/enable`,
     });
   }
 
-  async disableClient({ clientId }) {
+  async disablePeer({ peerId }) {
     return this.call({
       method: 'post',
-      path: `/wireguard/client/${clientId}/disable`,
+      path: `/wireguard/peer/${peerId}/disable`,
     });
   }
 
-  async updateClientName({ clientId, name }) {
+  async updatePeerName({ peerId, name }) {
     return this.call({
       method: 'put',
-      path: `/wireguard/client/${clientId}/name/`,
+      path: `/wireguard/peer/${peerId}/name/`,
       body: { name },
     });
   }
 
-  async updateClientAddress({ clientId, address }) {
+  async updatePeerAddress({ peerId, address }) {
     return this.call({
       method: 'put',
-      path: `/wireguard/client/${clientId}/address/`,
+      path: `/wireguard/peer/${peerId}/address/`,
       body: { address },
     });
   }
 
-  async updateClientExpireDate({ clientId, expireDate }) {
+  async updatePeerExpireDate({ peerId, expireDate }) {
     return this.call({
       method: 'put',
-      path: `/wireguard/client/${clientId}/expireDate/`,
+      path: `/wireguard/peer/${peerId}/expireDate/`,
       body: { expireDate },
     });
   }
