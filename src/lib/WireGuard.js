@@ -141,6 +141,9 @@ module.exports = class WireGuard {
   }
 
   async __saveConfig(config) {
+    if (!config.hubs || config.hubs.length === 0) {
+      return;
+    }
     const self = config.hubs[0]; // Assuming self is the first hub
     const postUp = `iptables -t nat -A POSTROUTING -s ${self.subnet.replace('x', '0')}/24 -o ${config.device} -j MASQUERADE; iptables -A INPUT -p udp -m udp --dport ${self.endpoint.split(':')[1]} -j ACCEPT; iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT;`;
     const postDown = `iptables -t nat -D POSTROUTING -s ${self.subnet.replace('x', '0')}/24 -o ${config.device} -j MASQUERADE; iptables -D INPUT -p udp -m udp --dport ${self.endpoint.split(':')[1]} -j ACCEPT; iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT;`;
@@ -213,6 +216,9 @@ ${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}\n` : ''
 
   async getPeers() {
     const config = await this.getConfig();
+    if (!config.peers) {
+      return [];
+    }
     const peers = config.peers.map((peer) => ({
       ...peer,
       role: 'peer',

@@ -250,6 +250,7 @@ module.exports = class Server {
         return WireGuard.getPeers();
       }))
       .get('/api/wireguard/hub', defineEventHandler(() => {
+        console.log('Getting hubs...');
         return WireGuard.getHubs();
       }))
       .get('/api/wireguard/peer/:peerId/qrcode.svg', defineEventHandler(async (event) => {
