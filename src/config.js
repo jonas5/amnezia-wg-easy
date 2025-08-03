@@ -20,6 +20,12 @@ module.exports.WG_DEFAULT_DNS = typeof process.env.WG_DEFAULT_DNS === 'string'
   : '1.1.1.1';
 module.exports.WG_ALLOWED_IPS = process.env.WG_ALLOWED_IPS || '0.0.0.0/0, ::/0';
 
+// Mesh networking
+module.exports.MESH_ENABLED = process.env.MESH_ENABLED === 'true';
+module.exports.MESH_API_KEY = process.env.MESH_API_KEY;
+module.exports.MESH_PEERS = process.env.MESH_PEERS ? process.env.MESH_PEERS.split(',') : [];
+
+
 module.exports.WG_PRE_UP = process.env.WG_PRE_UP || '';
 module.exports.WG_POST_UP = process.env.WG_POST_UP || `
 iptables -t nat -A POSTROUTING -s ${module.exports.WG_DEFAULT_ADDRESS.replace('x', '0')}/24 -o ${module.exports.WG_DEVICE} -j MASQUERADE;

@@ -13,6 +13,9 @@ const ServerError = require('./ServerError');
 const {
   WG_PATH,
   WG_HOST,
+  MESH_ENABLED,
+  MESH_API_KEY,
+  MESH_PEERS,
   WG_PORT,
   WG_CONFIG_PORT,
   WG_MTU,
@@ -74,8 +77,17 @@ module.exports = class WireGuard {
             h4: H4,
           },
           clients: {},
+          mesh: {
+            peers: {}
+          }
         };
         debug('Configuration generated.');
+      }
+
+      if (!config.mesh) {
+        config.mesh = {
+          peers: {}
+        };
       }
 
       return config;
@@ -148,6 +160,18 @@ H4 = ${config.server.h4}
 PublicKey = ${client.publicKey}
 ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
 }AllowedIPs = ${client.address}/32`;
+    }
+
+    if (config.mesh && config.mesh.peers) {
+        for (const [peerId, peer] of Object.entries(config.mesh.peers)) {
+        result += `
+
+# Mesh Peer: ${peer.endpoint} (${peerId})
+[Peer]
+PublicKey = ${peer.publicKey}
+AllowedIPs = ${peer.subnet}
+Endpoint = ${peer.endpoint}:${WG_PORT}`;
+        }
     }
 
     debug('Config saving...');
@@ -436,9 +460,77 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     await Util.exec('wg-quick down wg0').catch(() => {});
   }
 
+  async syncMesh() {
+    if (!MESH_ENABLED) {
+      return;
+    }
+    debug('Syncing mesh state...');
+
+    const config = await this.getConfig();
+    let meshStateChanged = false;
+
+    for (const peerUrl of MESH_PEERS) {
+      try {
+        const response = await fetch(`${peerUrl}/api/mesh/state`, {
+          headers: {
+            Authorization: `Bearer ${MESH_API_KEY}`,
+          },
+        });
+
+        if (!response.ok) {
+          debug(`Failed to fetch mesh state from ${peerUrl}: ${response.statusText}`);
+          continue;
+        }
+
+        const peerState = await response.json();
+        const peerId = peerState.publicKey;
+
+        const existingPeer = config.mesh.peers[peerId];
+
+        if (!existingPeer ||
+            existingPeer.endpoint !== peerState.endpoint ||
+            existingPeer.subnet !== peerState.subnet) {
+          config.mesh.peers[peerId] = {
+            publicKey: peerState.publicKey,
+            endpoint: peerState.endpoint,
+            subnet: peerState.subnet,
+          };
+          meshStateChanged = true;
+          debug(`Updated mesh peer: ${peerId}`);
+        }
+        if (config.mesh.peers[peerId]) {
+            config.mesh.peers[peerId].lastSeen = Date.now();
+        }
+      } catch (error) {
+        debug(`Error fetching mesh state from ${peerUrl}:`, error);
+      }
+    }
+
+    const now = Date.now();
+    const staleTimeout = 120 * 1000; // 120 seconds
+    for (const [peerId, peer] of Object.entries(config.mesh.peers)) {
+        if (!peer.lastSeen || (now - peer.lastSeen > staleTimeout)) {
+            delete config.mesh.peers[peerId];
+            meshStateChanged = true;
+            debug(`Removed stale mesh peer: ${peerId}`);
+        }
+    }
+
+    if (meshStateChanged) {
+      debug('Mesh state changed, saving config.');
+      await this.saveConfig();
+    } else {
+      debug('Mesh state unchanged.');
+    }
+  }
+
   async cronJobEveryMinute() {
     const config = await this.getConfig();
     let needSaveConfig = false;
+
+    // Sync Mesh State
+    await this.syncMesh();
+
     // Expires Feature
     if (WG_ENABLE_EXPIRES_TIME === 'true') {
       for (const client of Object.values(config.clients)) {

@@ -41,6 +41,10 @@ const {
   PROMETHEUS_METRICS_PASSWORD,
   DICEBEAR_TYPE,
   USE_GRAVATAR,
+  MESH_ENABLED,
+  MESH_API_KEY,
+  WG_HOST,
+  WG_DEFAULT_ADDRESS,
 } = require('../config');
 
 const requiresPassword = !!PASSWORD_HASH;
@@ -192,6 +196,33 @@ module.exports = class Server {
 
         return { success: true };
       }));
+
+    // Mesh API
+    if (MESH_ENABLED) {
+      const meshRouter = createRouter();
+      app.use(meshRouter);
+
+      meshRouter.get('/api/mesh/state', defineEventHandler(async (event) => {
+        const authHeader = event.node.req.headers.authorization;
+        if (!MESH_API_KEY || !authHeader || authHeader !== `Bearer ${MESH_API_KEY}`) {
+          throw createError({
+            status: 401,
+            message: 'Unauthorized',
+          });
+        }
+
+        const config = await WireGuard.getConfig();
+        const serverAddress = config.server.address;
+        const serverSubnet = WG_DEFAULT_ADDRESS.replace('x', '0') + '/24';
+
+        return {
+          publicKey: config.server.publicKey,
+          endpoint: WG_HOST,
+          address: serverAddress.split('/')[0],
+          subnet: serverSubnet,
+        };
+      }));
+    }
 
     // WireGuard
     app.use(
