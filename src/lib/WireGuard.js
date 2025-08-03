@@ -17,7 +17,6 @@ const {
   WG_MTU,
   WG_DEFAULT_DNS,
   WG_PERSISTENT_KEEPALIVE,
-  WG_ALLOWED_IPS,
   WG_ROLE,
   WG_SUBNET,
   WG_HUBS,
@@ -290,12 +289,13 @@ ${WG_MTU ? `MTU = ${WG_MTU}\n` : ''}\
 `;
 
     for (const hub of config.hubs) {
+      const allowedIPs = peer.exitNode === hub.id ? '0.0.0.0/0, ::/0' : `${hub.subnet.replace('x', '0')}/24`;
       result += `
 
 # Hub: ${hub.name}
 [Peer]
 PublicKey = ${hub.publicKey}
-AllowedIPs = ${WG_ALLOWED_IPS}
+AllowedIPs = ${allowedIPs}
 PersistentKeepalive = ${WG_PERSISTENT_KEEPALIVE}
 Endpoint = ${hub.endpoint}`;
     }
@@ -312,7 +312,7 @@ Endpoint = ${hub.endpoint}`;
   }
 
   async createPeer({
-    name, role, endpoint, expiredDate,
+    name, role, endpoint, expiredDate, exitNode,
   }) {
     if (!name) {
       throw new Error('Missing: Name');
@@ -352,6 +352,7 @@ Endpoint = ${hub.endpoint}`;
       privateKey,
       publicKey,
       preSharedKey,
+      exitNode,
       createdAt: new Date(),
       updatedAt: new Date(),
       expiredAt: null,
@@ -389,6 +390,15 @@ Endpoint = ${hub.endpoint}`;
     const peer = await this.getPeer({ peerId });
 
     peer.enabled = true;
+    peer.updatedAt = new Date();
+
+    await this.saveConfig();
+  }
+
+  async updatePeerExitNode({ peerId, exitNode }) {
+    const peer = await this.getPeer({ peerId });
+
+    peer.exitNode = exitNode;
     peer.updatedAt = new Date();
 
     await this.saveConfig();

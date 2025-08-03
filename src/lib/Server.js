@@ -326,6 +326,15 @@ module.exports = class Server {
         const { expireDate } = await readBody(event);
         await WireGuard.updatePeerExpireDate({ peerId, expireDate });
         return { success: true };
+      }))
+      .put('/api/wireguard/peer/:peerId/exitnode', defineEventHandler(async (event) => {
+        const peerId = getRouterParam(event, 'peerId');
+        if (peerId === '__proto__' || peerId === 'constructor' || peerId === 'prototype') {
+          throw createError({ status: 403 });
+        }
+        const { exitNode } = await readBody(event);
+        await WireGuard.updatePeerExitNode({ peerId, exitNode });
+        return { success: true };
       }));
 
     const safePathJoin = (base, target) => {

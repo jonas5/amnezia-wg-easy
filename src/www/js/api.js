@@ -195,6 +195,14 @@ class API {
     });
   }
 
+  async updatePeerExitNode({ peerId, exitNode }) {
+    return this.call({
+      method: 'put',
+      path: `/wireguard/peer/${peerId}/exitnode/`,
+      body: { exitNode },
+    });
+  }
+
   async restoreConfiguration(file) {
     return this.call({
       method: 'put',

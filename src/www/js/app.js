@@ -87,6 +87,8 @@ new Vue({
     peerEditAddressId: null,
     peerEditExpireDate: null,
     peerEditExpireDateId: null,
+    peerEditExitNode: null,
+    peerEditExitNodeId: null,
     qrcode: null,
 
     currentRelease: null,
@@ -318,6 +320,11 @@ new Vue({
       this.api.createPeer({
         name, role, endpoint, expiredDate,
       })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => this.refresh().catch(console.error));
+    },
+    updatePeerExitNode(peer, exitNode) {
+      this.api.updatePeerExitNode({ peerId: peer.id, exitNode })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
