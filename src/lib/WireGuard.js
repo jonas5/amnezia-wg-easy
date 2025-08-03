@@ -613,7 +613,7 @@ Endpoint = ${hub.endpoint}`;
     await Util.exec('wg-quick down wg0').catch(() => {});
     await Util.exec('wg-quick up wg0').catch((err) => {
       if (err && err.message && err.message.includes('Cannot find device "wg0"')) {
-        throw new Error('WireGuard exited with the error: Cannot find device "wg0"\\nThis usually means that your host\\'s kernel does not support WireGuard!');
+        throw new Error('WireGuard exited with the error: Cannot find device "wg0"\\\\nThis usually means that your host\\\\'s kernel does not support WireGuard!');
       }
       throw err;
     });
