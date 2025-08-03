@@ -440,11 +440,6 @@ new Vue({
         this.rememberMeEnabled = rememberMeEnabled;
       });
 
-    setInterval(() => {
-      this.refresh({
-        updateCharts: this.updateCharts,
-      }).catch(console.error);
-    }, 1000);
 
     this.api.getuiTrafficStats()
       .then((res) => {
