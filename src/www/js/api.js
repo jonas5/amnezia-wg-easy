@@ -199,4 +199,11 @@ class API {
     });
   }
 
+  async getMeshPeers() {
+    return this.call({
+      method: 'get',
+      path: '/mesh/peers',
+    });
+   }
+
 }

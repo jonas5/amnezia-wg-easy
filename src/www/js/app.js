@@ -86,6 +86,8 @@ new Vue({
     clientEditExpireDateId: null,
     qrcode: null,
 
+    meshPeers: null,
+
     currentRelease: null,
     latestRelease: null,
 
@@ -267,6 +269,11 @@ new Vue({
         this.clients = sortByProperty(this.clients, 'name', this.sortClient);
       }
     },
+    async refreshMeshPeers() {
+        if (!this.authenticated) return;
+        const meshPeers = await this.api.getMeshPeers();
+        this.meshPeers = Object.values(meshPeers);
+    },
     login(e) {
       e.preventDefault();
 
@@ -429,6 +436,7 @@ new Vue({
       this.refresh({
         updateCharts: this.updateCharts,
       }).catch(console.error);
+      this.refreshMeshPeers().catch(console.error);
     }, 1000);
 
     this.api.getuiTrafficStats()

@@ -119,6 +119,11 @@ module.exports = class WireGuard {
     return this.__configPromise;
   }
 
+  async getMeshPeers() {
+    const config = await this.getConfig();
+    return config.mesh ? config.mesh.peers : {};
+  }
+
   async saveConfig() {
     const config = await this.getConfig();
     await this.__saveConfig(config);

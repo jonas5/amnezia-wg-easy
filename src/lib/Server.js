@@ -222,6 +222,10 @@ module.exports = class Server {
           subnet: serverSubnet,
         };
       }));
+
+      meshRouter.get('/api/mesh/peers', defineEventHandler(async (event) => {
+        return WireGuard.getMeshPeers();
+      }));
     }
 
     // WireGuard

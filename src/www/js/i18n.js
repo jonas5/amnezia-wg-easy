@@ -17,6 +17,8 @@ const messages = { // eslint-disable-line no-unused-vars
     create: 'Create',
     createdOn: 'Created on ',
     lastSeen: 'Last seen on ',
+    subnet: 'Subnet',
+    meshPeers: 'Mesh Peers',
     totalDownload: 'Total Download: ',
     totalUpload: 'Total Upload: ',
     newClient: 'New Client',

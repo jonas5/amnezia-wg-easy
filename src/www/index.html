@@ -443,6 +443,48 @@
           </div>
         </div>
 
+        <!-- Mesh Peers -->
+        <div v-if="meshPeers && meshPeers.length > 0" class="shadow-md rounded-lg bg-white dark:bg-neutral-700 overflow-hidden mt-10">
+            <div class="flex flex-row flex-auto items-center p-3 px-5 border-b-2 border-gray-100 dark:border-neutral-600">
+                <div class="flex-grow">
+                    <p class="text-2xl font-medium dark:text-neutral-200">{{$t("meshPeers")}}</p>
+                </div>
+            </div>
+            <div>
+                <div v-for="peer in meshPeers" :key="peer.publicKey" class="relative overflow-hidden border-b last:border-b-0 border-gray-100 dark:border-neutral-600 border-solid">
+                    <div class="relative py-3 md:py-5 px-3 z-10 flex flex-col sm:flex-row justify-between gap-3">
+                        <div class="flex gap-3 md:gap-4 w-full items-center ">
+                            <!-- Status Indicator -->
+                            <div class="h-10 w-10 mt-2 self-start rounded-full bg-gray-50 relative">
+                                <div v-if="new Date() - new Date(peer.lastSeen) < 150000">
+                                    <div class="animate-ping w-4 h-4 p-1 bg-green-100 dark:bg-green-100 rounded-full absolute -bottom-1 -right-1"></div>
+                                    <div class="w-2 h-2 bg-green-800 dark:bg-green-600 rounded-full absolute bottom-0 right-0"></div>
+                                </div>
+                                <div v-else>
+                                    <div class="w-2 h-2 bg-red-800 dark:bg-red-600 rounded-full absolute bottom-0 right-0"></div>
+                                </div>
+                            </div>
+                            <!-- Peer Info -->
+                            <div class="flex flex-col w-full">
+                                <div class="text-gray-700 dark:text-neutral-200 text-sm md:text-base">
+                                    {{ peer.endpoint }}
+                                </div>
+                                <div class="text-gray-500 dark:text-neutral-400 text-xs">
+                                    {{ peer.publicKey }}
+                                </div>
+                                 <div class="text-gray-500 dark:text-neutral-400 text-xs">
+                                    {{$t("subnet")}}: {{ peer.subnet }}
+                                </div>
+                                <div class="text-gray-400 dark:text-neutral-500 whitespace-nowrap text-xs" v-if="peer.lastSeen">
+                                  {{$t("lastSeen")}}: {{new Date(peer.lastSeen) | timeago}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- QR Code-->
         <div v-if="qrcode">
           <div class="bg-black bg-opacity-50 fixed top-0 right-0 left-0 bottom-0 flex items-center justify-center z-20">
