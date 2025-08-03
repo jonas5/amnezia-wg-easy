@@ -87,9 +87,40 @@ module.exports = class Server {
       saveUninitialized: true,
     })));
 
+
+    // Static assets
+    const publicDir = '/app/www';
+    app.use(
+      defineEventHandler((event) => {
+        return serveStatic(event, {
+          getContents: (id) => {
+            return readFile(safePathJoin(publicDir, id));
+          },
+          getMeta: async (id) => {
+            const filePath = safePathJoin(publicDir, id);
+
+            const stats = await stat(filePath).catch(() => {});
+            if (!stats || !stats.isFile()) {
+              return;
+            }
+
+            if (id.endsWith('.html')) setHeader(event, 'Content-Type', 'text/html');
+            if (id.endsWith('.js')) setHeader(event, 'Content-Type', 'application/javascript');
+            if (id.endsWith('.json')) setHeader(event, 'Content-Type', 'application/json');
+            if (id.endsWith('.css')) setHeader(event, 'Content-Type', 'text/css');
+            if (id.endsWith('.png')) setHeader(event, 'Content-Type', 'image/png');
+            if (id.endsWith('.svg')) setHeader(event, 'Content-Type', 'image/svg+xml');
+
+            return {
+              size: stats.size,
+              mtime: stats.mtimeMs,
+            };
+          },
+        });
+      }),
+    );
     const router = createRouter();
     app.use(router);
-
     router
       .get('/api/release', defineEventHandler((event) => {
         setHeader(event, 'Content-Type', 'application/json');
@@ -361,6 +392,7 @@ module.exports = class Server {
         await WireGuard.restart();
         return { success: true };
       }));
+
 
     const safePathJoin = (base, target) => {
       // Manage web root (edge case)
