@@ -4,7 +4,8 @@ const Settings = require('./lib/Settings');
 
 async function start() {
   await Settings.init();
-  require('./services/Server');
+  const Server = require('./services/Server');
+  new Server();
   const WireGuard = require('./services/WireGuard');
   WireGuard.getConfig()
     .catch((err) => {
