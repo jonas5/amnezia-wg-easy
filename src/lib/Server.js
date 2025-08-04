@@ -24,12 +24,12 @@ const {
 } = require('h3');
 
 const WireGuard = require('../services/WireGuard');
+const Settings = require('./Settings');
 
 const {
   PORT,
   WEBUI_HOST,
   RELEASE,
-  PASSWORD_HASH,
   MAX_AGE,
   LANG,
   UI_TRAFFIC_STATS,
@@ -42,9 +42,6 @@ const {
   DICEBEAR_TYPE,
   USE_GRAVATAR,
 } = require('../config');
-
-const requiresPassword = !!PASSWORD_HASH;
-const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
 
 /**
  * Checks if `password` matches the PASSWORD_HASH.
@@ -136,6 +133,7 @@ module.exports = class Server {
 
       // Authentication
       .get('/api/session', defineEventHandler((event) => {
+        const requiresPassword = !!Settings.get('PASSWORD_HASH');
         const authenticated = requiresPassword
           ? !!(event.node.req.session && event.node.req.session.authenticated)
           : true;
@@ -165,6 +163,8 @@ module.exports = class Server {
       }))
       .post('/api/session', defineEventHandler(async (event) => {
         const { password, remember } = await readBody(event);
+        const PASSWORD_HASH = Settings.get('PASSWORD_HASH');
+        const requiresPassword = !!PASSWORD_HASH;
 
         if (!requiresPassword) {
           // if no password is required, the API should never be called.
@@ -196,6 +196,8 @@ module.exports = class Server {
     // WireGuard
     app.use(
       fromNodeMiddleware((req, res, next) => {
+        const PASSWORD_HASH = Settings.get('PASSWORD_HASH');
+        const requiresPassword = !!PASSWORD_HASH;
         if (!requiresPassword || !req.url.startsWith('/api/')) {
           return next();
         }
@@ -392,6 +394,25 @@ module.exports = class Server {
     // backup_restore
     const router3 = createRouter();
     app.use(router3);
+
+    const settingsRouter = createRouter();
+    app.use(settingsRouter);
+
+    settingsRouter.get('/api/settings', defineEventHandler(() => {
+        const { PASSWORD_HASH, WG_DEFAULT_ADDRESS } = Settings.getAll();
+        return { PASSWORD_HASH, WG_DEFAULT_ADDRESS };
+    }));
+
+    settingsRouter.put('/api/settings', defineEventHandler(async (event) => {
+        const newSettings = await readBody(event);
+        await Settings.update(newSettings);
+        return { success: true };
+    }));
+
+    settingsRouter.post('/api/service/restart', defineEventHandler(async () => {
+        await WireGuard.restart();
+        return { success: true };
+    }));
 
     router3
       .get('/api/wireguard/backup', defineEventHandler(async (event) => {

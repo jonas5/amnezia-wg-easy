@@ -86,6 +86,9 @@ new Vue({
     clientEditExpireDateId: null,
     qrcode: null,
 
+    settings: {},
+    currentView: 'clients',
+
     currentRelease: null,
     latestRelease: null,
 
@@ -267,6 +270,16 @@ new Vue({
         this.clients = sortByProperty(this.clients, 'name', this.sortClient);
       }
     },
+    async loadSettings() {
+        this.settings = await this.api.getSettings();
+    },
+    async saveSettings() {
+        await this.api.updateSettings(this.settings);
+        await this.api.restartService();
+        alert('Settings saved and service restarted.');
+        window.location.hash = '';
+        this.currentView = 'clients';
+    },
     login(e) {
       e.preventDefault();
 
@@ -404,6 +417,18 @@ new Vue({
   mounted() {
     this.prefersDarkScheme.addListener(this.handlePrefersChange);
     this.setTheme(this.uiTheme);
+
+    window.addEventListener('hashchange', () => {
+        this.currentView = window.location.hash.slice(1) || 'clients';
+        if (this.currentView === 'settings') {
+            this.loadSettings();
+        }
+    });
+    this.currentView = window.location.hash.slice(1) || 'clients';
+    if (this.currentView === 'settings') {
+        this.loadSettings();
+    }
+
 
     this.api = new API();
     this.api.getSession()

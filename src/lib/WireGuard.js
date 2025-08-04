@@ -17,7 +17,6 @@ const {
   WG_CONFIG_PORT,
   WG_MTU,
   WG_DEFAULT_DNS,
-  WG_DEFAULT_ADDRESS,
   WG_PERSISTENT_KEEPALIVE,
   WG_ALLOWED_IPS,
   WG_PRE_UP,
@@ -36,6 +35,7 @@ const {
   H3,
   H4,
 } = require('../config');
+const Settings = require('./Settings');
 
 module.exports = class WireGuard {
 
@@ -56,7 +56,7 @@ module.exports = class WireGuard {
         const publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
           log: 'echo ***hidden*** | wg pubkey',
         });
-        const address = WG_DEFAULT_ADDRESS.replace('x', '1');
+        const address = Settings.get('WG_DEFAULT_ADDRESS').replace('x', '1');
 
         config = {
           server: {
@@ -286,6 +286,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     // Calculate next IP
     let address;
+    const WG_DEFAULT_ADDRESS = Settings.get('WG_DEFAULT_ADDRESS');
     for (let i = 2; i < 255; i++) {
       const client = Object.values(config.clients).find((client) => {
         return client.address === WG_DEFAULT_ADDRESS.replace('x', i);
@@ -434,6 +435,14 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   // Shutdown wireguard
   async Shutdown() {
     await Util.exec('wg-quick down wg0').catch(() => {});
+  }
+
+  async restart() {
+    debug('Restarting WireGuard service...');
+    await this.Shutdown();
+    this.__configPromise = null;
+    await this.getConfig();
+    debug('WireGuard service restarted.');
   }
 
   async cronJobEveryMinute() {

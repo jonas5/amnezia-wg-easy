@@ -1,8 +1,11 @@
 'use strict';
 
-require('./services/Server');
+(async () => {
+    const Settings = require('./lib/Settings');
+    await Settings.init();
 
-const WireGuard = require('./services/WireGuard');
+    require('./services/Server');
+    const WireGuard = require('./services/WireGuard');
 
 WireGuard.getConfig()
   .catch((err) => {
@@ -27,3 +30,4 @@ process.on('SIGINT', () => {
   // eslint-disable-next-line no-console
   console.log('SIGINT signal received.');
 });
+})();
