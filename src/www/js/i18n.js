@@ -17,8 +17,6 @@ const messages = { // eslint-disable-line no-unused-vars
     create: 'Create',
     createdOn: 'Created on ',
     lastSeen: 'Last seen on ',
-    subnet: 'Subnet',
-    meshPeers: 'Mesh Peers',
     totalDownload: 'Total Download: ',
     totalUpload: 'Total Upload: ',
     newClient: 'New Client',
@@ -42,9 +40,6 @@ const messages = { // eslint-disable-line no-unused-vars
     ExpireDate: 'Expire Date',
     Permanent: 'Permanent',
     OneTimeLink: 'Generate short one time link',
-    settings: 'Settings',
-    back: 'Back',
-    saveAndRestart: 'Save & Restart',
   },
   ua: {
     name: 'Ім`я',

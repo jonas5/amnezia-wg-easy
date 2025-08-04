@@ -61,7 +61,6 @@
                     d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75ZM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 0 1-1.875-1.875V8.625ZM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 0 1 3 19.875v-6.75Z" />
               </svg>
             </label>
-            <a href="#/settings" class="text-sm text-gray-400 dark:text-neutral-400 cursor-pointer hover:underline">{{$t("settings")}}</a>
             <span v-if="requiresPassword"
               class="text-sm text-gray-400 dark:text-neutral-400 cursor-pointer hover:underline"
               @click="logout">
@@ -442,79 +441,6 @@
               </svg>
             </div>
           </div>
-        </div>
-
-        <!-- Mesh Peers -->
-        <div v-if="meshPeers && meshPeers.length > 0" class="shadow-md rounded-lg bg-white dark:bg-neutral-700 overflow-hidden mt-10">
-            <div class="flex flex-row flex-auto items-center p-3 px-5 border-b-2 border-gray-100 dark:border-neutral-600">
-                <div class="flex-grow">
-                    <p class="text-2xl font-medium dark:text-neutral-200">{{$t("meshPeers")}}</p>
-                </div>
-            </div>
-            <div>
-                <div v-for="peer in meshPeers" :key="peer.publicKey" class="relative overflow-hidden border-b last:border-b-0 border-gray-100 dark:border-neutral-600 border-solid">
-                    <div class="relative py-3 md:py-5 px-3 z-10 flex flex-col sm:flex-row justify-between gap-3">
-                        <div class="flex gap-3 md:gap-4 w-full items-center ">
-                            <!-- Status Indicator -->
-                            <div class="h-10 w-10 mt-2 self-start rounded-full bg-gray-50 relative">
-                                <div v-if="new Date() - new Date(peer.lastSeen) < 150000">
-                                    <div class="animate-ping w-4 h-4 p-1 bg-green-100 dark:bg-green-100 rounded-full absolute -bottom-1 -right-1"></div>
-                                    <div class="w-2 h-2 bg-green-800 dark:bg-green-600 rounded-full absolute bottom-0 right-0"></div>
-                                </div>
-                                <div v-else>
-                                    <div class="w-2 h-2 bg-red-800 dark:bg-red-600 rounded-full absolute bottom-0 right-0"></div>
-                                </div>
-                            </div>
-                            <!-- Peer Info -->
-                            <div class="flex flex-col w-full">
-                                <div class="text-gray-700 dark:text-neutral-200 text-sm md:text-base">
-                                    {{ peer.endpoint }}
-                                </div>
-                                <div class="text-gray-500 dark:text-neutral-400 text-xs">
-                                    {{ peer.publicKey }}
-                                </div>
-                                 <div class="text-gray-500 dark:text-neutral-400 text-xs">
-                                    {{$t("subnet")}}: {{ peer.subnet }}
-                                </div>
-                                <div class="text-gray-400 dark:text-neutral-500 whitespace-nowrap text-xs" v-if="peer.lastSeen">
-                                  {{$t("lastSeen")}}: {{new Date(peer.lastSeen) | timeago}}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Page -->
-        <div v-if="currentView === 'settings'">
-            <div class="shadow-md rounded-lg bg-white dark:bg-neutral-700 overflow-hidden mt-10">
-                <div class="flex flex-row flex-auto items-center p-3 px-5 border-b-2 border-gray-100 dark:border-neutral-600">
-                    <div class="flex-grow">
-                        <p class="text-2xl font-medium dark:text-neutral-200">{{$t("settings")}}</p>
-                    </div>
-                    <a href="#" @click.prevent="currentView = 'clients'" class="text-sm text-gray-400 dark:text-neutral-400 cursor-pointer hover:underline">{{$t("back")}}</a>
-                </div>
-                <div class="p-5">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="wg-port">
-                            WireGuard Port (WG_PORT)
-                        </label>
-                        <input v-model="settings.WG_PORT" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="wg-port" type="text" placeholder="51820">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="wg-default-address">
-                            Client Address Range (WG_DEFAULT_ADDRESS)
-                        </label>
-                        <input v-model="settings.WG_DEFAULT_ADDRESS" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="wg-default-address" type="text" placeholder="10.8.0.x">
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <button @click="saveSettings" class="bg-red-800 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="button">
-                            {{$t("saveAndRestart")}}
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- QR Code-->

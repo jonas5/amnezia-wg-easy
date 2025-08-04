@@ -199,32 +199,4 @@ class API {
     });
   }
 
-  async getMeshPeers() {
-    return this.call({
-      method: 'get',
-      path: '/mesh/peers',
-    });
-   }
-
-  async getSettings() {
-    return this.call({
-        method: 'get',
-        path: '/settings',
-    });
-  }
-
-  async updateSettings(settings) {
-    return this.call({
-        method: 'put',
-        path: '/settings',
-        body: settings,
-    });
-  }
-
-  async restartService() {
-    return this.call({
-        method: 'post',
-        path: '/service/restart',
-    });
-  }
 }
