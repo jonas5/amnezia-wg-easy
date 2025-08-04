@@ -350,6 +350,7 @@ module.exports = class Server {
     // Check Prometheus credentials
     app.use(
       fromNodeMiddleware((req, res, next) => {
+        const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
         if (!requiresPrometheusPassword || !req.url.startsWith('/metrics')) {
           return next();
         }
