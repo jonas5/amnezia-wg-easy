@@ -1,17 +1,22 @@
 'use strict';
 
-require('./services/Server');
+const Settings = require('./lib/Settings');
 
-const WireGuard = require('./services/WireGuard');
-
-WireGuard.getConfig()
-  .catch((err) => {
+async function start() {
+  await Settings.init();
+  require('./services/Server');
+  const WireGuard = require('./services/WireGuard');
+  WireGuard.getConfig()
+    .catch((err) => {
   // eslint-disable-next-line no-console
     console.error(err);
 
     // eslint-disable-next-line no-process-exit
     process.exit(1);
   });
+}
+
+start();
 
 // Handle terminate signal
 process.on('SIGTERM', async () => {

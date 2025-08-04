@@ -42,6 +42,9 @@ const messages = { // eslint-disable-line no-unused-vars
     ExpireDate: 'Expire Date',
     Permanent: 'Permanent',
     OneTimeLink: 'Generate short one time link',
+    settings: 'Settings',
+    back: 'Back',
+    saveAndRestart: 'Save & Restart',
   },
   ua: {
     name: 'Ім`я',

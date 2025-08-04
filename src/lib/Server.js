@@ -23,32 +23,8 @@ const {
   serveStatic,
 } = require('h3');
 
+const Settings = require('./Settings');
 const WireGuard = require('../services/WireGuard');
-
-const {
-  PORT,
-  WEBUI_HOST,
-  RELEASE,
-  PASSWORD_HASH,
-  MAX_AGE,
-  LANG,
-  UI_TRAFFIC_STATS,
-  UI_CHART_TYPE,
-  WG_ENABLE_ONE_TIME_LINKS,
-  UI_ENABLE_SORT_CLIENTS,
-  WG_ENABLE_EXPIRES_TIME,
-  ENABLE_PROMETHEUS_METRICS,
-  PROMETHEUS_METRICS_PASSWORD,
-  DICEBEAR_TYPE,
-  USE_GRAVATAR,
-  MESH_ENABLED,
-  MESH_API_KEY,
-  WG_HOST,
-  WG_DEFAULT_ADDRESS,
-} = require('../config');
-
-const requiresPassword = !!PASSWORD_HASH;
-const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
 
 /**
  * Checks if `password` matches the PASSWORD_HASH.
@@ -77,6 +53,7 @@ const cronJobEveryMinute = async () => {
 module.exports = class Server {
 
   constructor() {
+    const { PORT, WEBUI_HOST, MAX_AGE } = Settings.getAll();
     const app = createApp();
     this.app = app;
 
@@ -84,6 +61,9 @@ module.exports = class Server {
       secret: crypto.randomBytes(256).toString('hex'),
       resave: true,
       saveUninitialized: true,
+      cookie: {
+        maxAge: MAX_AGE,
+      }
     })));
 
     const router = createRouter();
@@ -91,46 +71,55 @@ module.exports = class Server {
 
     router
       .get('/api/release', defineEventHandler((event) => {
+        const { RELEASE } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return RELEASE;
       }))
 
       .get('/api/lang', defineEventHandler((event) => {
+        const { LANG } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return `"${LANG}"`;
       }))
 
       .get('/api/remember-me', defineEventHandler((event) => {
+        const { MAX_AGE } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return MAX_AGE > 0;
       }))
 
       .get('/api/ui-traffic-stats', defineEventHandler((event) => {
+        const { UI_TRAFFIC_STATS } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return `${UI_TRAFFIC_STATS}`;
       }))
 
       .get('/api/ui-chart-type', defineEventHandler((event) => {
+        const { UI_CHART_TYPE } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return `"${UI_CHART_TYPE}"`;
       }))
 
       .get('/api/wg-enable-one-time-links', defineEventHandler((event) => {
+        const { WG_ENABLE_ONE_TIME_LINKS } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return `${WG_ENABLE_ONE_TIME_LINKS}`;
       }))
 
       .get('/api/ui-sort-clients', defineEventHandler((event) => {
+        const { UI_ENABLE_SORT_CLIENTS } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return `${UI_ENABLE_SORT_CLIENTS}`;
       }))
 
       .get('/api/wg-enable-expire-time', defineEventHandler((event) => {
+        const { WG_ENABLE_EXPIRES_TIME } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return `${WG_ENABLE_EXPIRES_TIME}`;
       }))
 
       .get('/api/ui-avatar-settings', defineEventHandler((event) => {
+        const { DICEBEAR_TYPE, USE_GRAVATAR } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         return {
           dicebear: DICEBEAR_TYPE,
@@ -140,6 +129,8 @@ module.exports = class Server {
 
       // Authentication
       .get('/api/session', defineEventHandler((event) => {
+        const { PASSWORD_HASH } = Settings.getAll();
+        const requiresPassword = !!PASSWORD_HASH;
         const authenticated = requiresPassword
           ? !!(event.node.req.session && event.node.req.session.authenticated)
           : true;
@@ -150,6 +141,7 @@ module.exports = class Server {
         };
       }))
       .get('/cnf/:clientOneTimeLink', defineEventHandler(async (event) => {
+        const { WG_ENABLE_ONE_TIME_LINKS } = Settings.getAll();
         if (WG_ENABLE_ONE_TIME_LINKS === 'false') {
           throw createError({
             status: 404,
@@ -168,6 +160,8 @@ module.exports = class Server {
         return config;
       }))
       .post('/api/session', defineEventHandler(async (event) => {
+        const { PASSWORD_HASH, MAX_AGE } = Settings.getAll();
+        const requiresPassword = !!PASSWORD_HASH;
         const { password, remember } = await readBody(event);
 
         if (!requiresPassword) {
@@ -198,6 +192,7 @@ module.exports = class Server {
       }));
 
     // Mesh API
+    const { MESH_ENABLED, MESH_API_KEY, WG_DEFAULT_ADDRESS, WG_HOST } = Settings.getAll();
     if (MESH_ENABLED) {
       const meshRouter = createRouter();
       app.use(meshRouter);
@@ -231,6 +226,8 @@ module.exports = class Server {
     // WireGuard
     app.use(
       fromNodeMiddleware((req, res, next) => {
+        const { PASSWORD_HASH } = Settings.getAll();
+        const requiresPassword = !!PASSWORD_HASH;
         if (!requiresPassword || !req.url.startsWith('/api/')) {
           return next();
         }
@@ -308,6 +305,7 @@ module.exports = class Server {
         return { success: true };
       }))
       .post('/api/wireguard/client/:clientId/generateOneTimeLink', defineEventHandler(async (event) => {
+        const { WG_ENABLE_ONE_TIME_LINKS } = Settings.getAll();
         if (WG_ENABLE_ONE_TIME_LINKS === 'false') {
           throw createError({
             status: 404,
@@ -383,6 +381,8 @@ module.exports = class Server {
     // Check Prometheus credentials
     app.use(
       fromNodeMiddleware((req, res, next) => {
+        const { PROMETHEUS_METRICS_PASSWORD } = Settings.getAll();
+        const requiresPrometheusPassword = !!PROMETHEUS_METRICS_PASSWORD;
         if (!requiresPrometheusPassword || !req.url.startsWith('/metrics')) {
           return next();
         }
@@ -410,6 +410,7 @@ module.exports = class Server {
     // Prometheus Routes
     routerPrometheusMetrics
       .get('/metrics', defineEventHandler(async (event) => {
+        const { ENABLE_PROMETHEUS_METRICS } = Settings.getAll();
         setHeader(event, 'Content-Type', 'text/plain');
         if (ENABLE_PROMETHEUS_METRICS === 'true') {
           return WireGuard.getMetrics();
@@ -417,6 +418,7 @@ module.exports = class Server {
         return '';
       }))
       .get('/metrics/json', defineEventHandler(async (event) => {
+        const { ENABLE_PROMETHEUS_METRICS } = Settings.getAll();
         setHeader(event, 'Content-Type', 'application/json');
         if (ENABLE_PROMETHEUS_METRICS === 'true') {
           return WireGuard.getMetricsJSON();
@@ -427,6 +429,24 @@ module.exports = class Server {
     // backup_restore
     const router3 = createRouter();
     app.use(router3);
+
+    const settingsRouter = createRouter();
+    app.use(settingsRouter);
+
+    settingsRouter.get('/api/settings', defineEventHandler(() => {
+        return Settings.getAll();
+    }));
+
+    settingsRouter.put('/api/settings', defineEventHandler(async (event) => {
+        const newSettings = await readBody(event);
+        await Settings.update(newSettings);
+        return { success: true };
+    }));
+
+    settingsRouter.post('/api/service/restart', defineEventHandler(async () => {
+        await WireGuard.restart();
+        return { success: true };
+    }));
 
     router3
       .get('/api/wireguard/backup', defineEventHandler(async (event) => {
