@@ -271,7 +271,14 @@ new Vue({
       }
     },
     async loadSettings() {
-        this.settings = await this.api.getSettings();
+        console.log('Loading settings...');
+        try {
+            const settings = await this.api.getSettings();
+            console.log('Settings loaded:', settings);
+            this.settings = settings;
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+        }
     },
     async saveSettings() {
         await this.api.updateSettings(this.settings);
@@ -419,6 +426,7 @@ new Vue({
     this.setTheme(this.uiTheme);
 
     window.addEventListener('hashchange', () => {
+        console.log('Hash changed:', window.location.hash);
         this.currentView = window.location.hash.slice(1) || 'clients';
         if (this.currentView === 'settings') {
             this.loadSettings();
