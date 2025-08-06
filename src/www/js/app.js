@@ -39,11 +39,6 @@ function sortByProperty(array, property, sort = true) {
   return array.sort((a, b) => (typeof a[property] === 'string' ? b[property].localeCompare(a[property]) : b[property] - a[property]));
 }
 
-const i18n = new VueI18n({
-  locale: localStorage.getItem('lang') || 'en',
-  fallbackLocale: 'en',
-  messages,
-});
 
 const UI_CHART_TYPES = [
   { type: false, strokeWidth: 0 },
@@ -214,6 +209,7 @@ new Vue({
       if (!this.authenticated) return;
 
       const peers = await this.api.getPeers();
+      console.log('Peers from API:', peers);
       this.peers = peers.map((peer) => {
         if (peer.name.includes('@') && peer.name.includes('.') && this.avatarSettings.gravatar) {
           peer.avatar = `https://gravatar.com/avatar/${sha256(peer.name.toLowerCase().trim())}.jpg`;
@@ -331,7 +327,7 @@ new Vue({
         };
         this.api.createPeer(peerData)
             .catch((err) => alert(err.message || err.toString()))
-            .finally(() => this.refresh().catch(console.error));
+            .finally(() => setTimeout(() => this.refresh().catch(console.error), 1000));
     },
     deletePeer(peer) {
       this.api.deletePeer({ peerId: peer.id })
