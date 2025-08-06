@@ -369,7 +369,8 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       if (!publicKey || !allowedIPs) {
         throw new Error('Missing required fields for server peer: publicKey, allowedIPs');
       }
-      if (!/^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$/.test(publicKey)) {
+      const decodedKey = Buffer.from(publicKey, 'base64');
+      if (decodedKey.length !== 32) {
         throw new Error('Invalid public key');
       }
 
