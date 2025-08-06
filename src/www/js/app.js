@@ -420,7 +420,7 @@ new Vue({
 
                     for (const line of lines) {
                         if (line.startsWith('PublicKey')) {
-                            publicKey = line.split('=')[1].trim();
+                            publicKey = line.split('=')[1];
                         } else if (line.startsWith('Endpoint')) {
                             endpoint = line.split('=')[1].trim();
                         } else if (line.startsWith('AllowedIPs')) {
