@@ -241,9 +241,18 @@ ${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}\n` : ''
         const peer = peers.find((p) => p.publicKey === publicKey);
         if (!peer) return;
 
-        peer.latestHandshakeAt = latestHandshakeAt === '0'
+        const newLatestHandshakeAt = latestHandshakeAt === '0'
           ? null
           : new Date(Number(`${latestHandshakeAt}000`));
+
+        if (newLatestHandshakeAt && peer.latestHandshakeAt !== newLatestHandshakeAt) {
+            debug(`Peer ${peer.name} (${peer.id}) connected from ${endpoint}`);
+        } else if (!newLatestHandshakeAt && peer.latestHandshakeAt) {
+            debug(`Peer ${peer.name} (${peer.id}) disconnected`);
+        }
+
+        peer.latestHandshakeAt = newLatestHandshakeAt;
+
         if (endpoint !== '(none)') {
           peer.endpoint = endpoint;
         }

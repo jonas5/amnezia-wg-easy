@@ -176,11 +176,13 @@ module.exports = class Server {
         }
 
         if (!isPasswordValid(password, PASSWORD_HASH)) {
+          debug(`Failed login attempt for user: ${password}`);
           throw createError({
             status: 401,
             message: 'Incorrect Password',
           });
         }
+        debug(`Successful login for user: ${password}`);
 
         if (MAX_AGE && remember) {
           event.node.req.session.cookie.maxAge = MAX_AGE;
@@ -201,8 +203,10 @@ module.exports = class Server {
         }
 
         if (req.session && req.session.authenticated) {
+          debug(`Session authenticated for path: ${req.url}`);
           return next();
         }
+        debug(`Session not authenticated for path: ${req.url}`);
 
         if (req.url.startsWith('/api/') && req.headers['authorization']) {
           if (isPasswordValid(req.headers['authorization'], PASSWORD_HASH)) {
