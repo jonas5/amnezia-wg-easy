@@ -370,9 +370,6 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       if (!publicKey || !allowedIPs) {
         throw new Error('Missing required fields for server peer: publicKey, allowedIPs');
       }
-      if (!/^[A-Za-z0-9+/]{43}=$/.test(publicKey)) {
-          throw new Error('Invalid public key');
-      }
 
       const serverPeer = {
         id,
