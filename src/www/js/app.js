@@ -91,7 +91,7 @@ new Vue({
     serverCreateName: '',
     serverCreatePublicKey: '',
     serverCreateEndpoint: '',
-    serverCreateAllowedIps: '',
+    serverCreateAllowedIPs: '',
     serverCreatePreSharedKey: '',
     serverCreatePersistentKeepalive: '',
 
@@ -325,7 +325,7 @@ new Vue({
             name: this.serverCreateName,
             publicKey: this.serverCreatePublicKey,
             endpoint: this.serverCreateEndpoint,
-            allowedIPs: this.serverCreateAllowedIps,
+            allowedIPs: this.serverCreateAllowedIPs,
             preSharedKey: this.serverCreatePreSharedKey,
             persistentKeepalive: this.serverCreatePersistentKeepalive,
         };
@@ -435,7 +435,7 @@ new Vue({
                     this.serverCreateName = file.name.replace('.conf', '');
                     this.serverCreatePublicKey = publicKey;
                     this.serverCreateEndpoint = endpoint;
-                    this.serverCreateAllowedIps = allowedIPs;
+                    this.serverCreateAllowedIPs = allowedIPs;
                     this.serverCreatePreSharedKey = preSharedKey;
                     this.serverCreatePersistentKeepalive = persistentKeepalive;
                     this.serverCreate = true;
