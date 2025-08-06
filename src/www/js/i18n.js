@@ -18,6 +18,7 @@ const messages = { // eslint-disable-line no-unused-vars
     allowedIPs: 'Allowed IPs',
     preSharedKey: 'Preshared Key',
     persistentKeepalive: 'Persistent Keepalive',
+    import: 'Import',
     deleteClient: 'Delete Client',
     deleteDialog1: 'Are you sure you want to delete',
     deleteDialog2: 'This action cannot be undone.',

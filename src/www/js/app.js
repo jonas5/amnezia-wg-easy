@@ -405,6 +405,46 @@ new Vue({
     toggleCharts() {
       localStorage.setItem('uiShowCharts', this.uiShowCharts ? 1 : 0);
     },
+    importServer(e) {
+        e.preventDefault();
+        const file = e.currentTarget.files.item(0);
+        if (file) {
+            file.text()
+                .then((content) => {
+                    const lines = content.split('\n');
+                    let publicKey = '';
+                    let endpoint = '';
+                    let allowedIPs = '';
+                    let preSharedKey = '';
+                    let persistentKeepalive = '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('PublicKey')) {
+                            publicKey = line.split('=')[1].trim();
+                        } else if (line.startsWith('Endpoint')) {
+                            endpoint = line.split('=')[1].trim();
+                        } else if (line.startsWith('AllowedIPs')) {
+                            allowedIPs = line.split('=')[1].trim();
+                        } else if (line.startsWith('PresharedKey')) {
+                            preSharedKey = line.split('=')[1].trim();
+                        } else if (line.startsWith('PersistentKeepalive')) {
+                            persistentKeepalive = line.split('=')[1].trim();
+                        }
+                    }
+
+                    this.serverCreateName = file.name.replace('.conf', '');
+                    this.serverCreatePublicKey = publicKey;
+                    this.serverCreateEndpoint = endpoint;
+                    this.serverCreateAllowedIps = allowedIPs;
+                    this.serverCreatePreSharedKey = preSharedKey;
+                    this.serverCreatePersistentKeepalive = persistentKeepalive;
+                    this.serverCreate = true;
+                })
+                .catch((err) => alert(err.message || err.toString()));
+        } else {
+            alert('Failed to load your file!');
+        }
+    },
   },
   filters: {
     bytes,
