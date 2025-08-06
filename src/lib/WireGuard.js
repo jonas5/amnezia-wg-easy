@@ -311,6 +311,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
 
   async createPeer(peerData) {
+    debug('Creating peer with data: %o', peerData);
     const { type, name } = peerData;
     if (!name) {
       throw new Error('Missing: Name');
@@ -369,9 +370,8 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       if (!publicKey || !allowedIPs) {
         throw new Error('Missing required fields for server peer: publicKey, allowedIPs');
       }
-      const decodedKey = Buffer.from(publicKey, 'base64');
-      if (decodedKey.length !== 32) {
-        throw new Error('Invalid public key');
+      if (!/^[A-Za-z0-9+/]{43}=$/.test(publicKey)) {
+          throw new Error('Invalid public key');
       }
 
       const serverPeer = {
