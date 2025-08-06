@@ -73,10 +73,25 @@ module.exports = class WireGuard {
             h3: H3,
             h4: H4,
           },
-          clients: {},
+          peers: {},
         };
         debug('Configuration generated.');
       }
+
+      // Migration from old format
+      if (config.clients && !config.peers) {
+        debug('Migrating clients to peers...');
+        config.peers = {};
+        for (const [clientId, client] of Object.entries(config.clients)) {
+          config.peers[clientId] = {
+            ...client,
+            type: 'client',
+          };
+        }
+        delete config.clients;
+        debug('Migration complete.');
+      }
+
 
       return config;
     });
@@ -138,16 +153,28 @@ H3 = ${config.server.h3}
 H4 = ${config.server.h4}
 `;
 
-    for (const [clientId, client] of Object.entries(config.clients)) {
-      if (!client.enabled) continue;
+    for (const [peerId, peer] of Object.entries(config.peers)) {
+      if (!peer.enabled) continue;
 
-      result += `
+      if (peer.type === 'client') {
+        result += `
 
-# Client: ${client.name} (${clientId})
+# Client: ${peer.name} (${peerId})
 [Peer]
-PublicKey = ${client.publicKey}
-${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
-}AllowedIPs = ${client.address}/32`;
+PublicKey = ${peer.publicKey}
+${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}\n` : ''
+}AllowedIPs = ${peer.address}/32`;
+      } else if (peer.type === 'server') {
+        result += `
+
+# Peer: ${peer.name} (${peerId})
+[Peer]
+PublicKey = ${peer.publicKey}
+${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}\n` : ''
+}${peer.allowedIPs ? `AllowedIPs = ${peer.allowedIPs}\n` : ''
+}${peer.endpoint ? `Endpoint = ${peer.endpoint}\n` : ''
+}${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}\n` : ''}`;
+      }
     }
 
     debug('Config saving...');
@@ -166,28 +193,29 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
     debug('Config synced.');
   }
 
-  async getClients() {
+  async getPeers() {
     const config = await this.getConfig();
-    const clients = Object.entries(config.clients).map(([clientId, client]) => ({
-      id: clientId,
-      name: client.name,
-      enabled: client.enabled,
-      address: client.address,
-      publicKey: client.publicKey,
-      createdAt: new Date(client.createdAt),
-      updatedAt: new Date(client.updatedAt),
-      expiredAt: client.expiredAt !== null
-        ? new Date(client.expiredAt)
+    const peers = Object.entries(config.peers).map(([peerId, peer]) => ({
+      id: peerId,
+      type: peer.type,
+      name: peer.name,
+      enabled: peer.enabled,
+      address: peer.address,
+      publicKey: peer.publicKey,
+      createdAt: new Date(peer.createdAt),
+      updatedAt: new Date(peer.updatedAt),
+      expiredAt: peer.expiredAt !== null
+        ? new Date(peer.expiredAt)
         : null,
-      allowedIPs: client.allowedIPs,
-      oneTimeLink: client.oneTimeLink ?? null,
-      oneTimeLinkExpiresAt: client.oneTimeLinkExpiresAt ?? null,
-      downloadableConfig: 'privateKey' in client,
-      persistentKeepalive: null,
+      allowedIPs: peer.allowedIPs,
+      oneTimeLink: peer.oneTimeLink ?? null,
+      oneTimeLinkExpiresAt: peer.oneTimeLinkExpiresAt ?? null,
+      downloadableConfig: 'privateKey' in peer,
+      persistentKeepalive: peer.persistentKeepalive,
       latestHandshakeAt: null,
       transferRx: null,
       transferTx: null,
-      endpoint: null,
+      endpoint: peer.endpoint,
     }));
 
     // Loop WireGuard status
@@ -202,7 +230,7 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
         const [
           publicKey,
           preSharedKey, // eslint-disable-line no-unused-vars
-          endpoint, // eslint-disable-line no-unused-vars
+          endpoint,
           allowedIps, // eslint-disable-line no-unused-vars
           latestHandshakeAt,
           transferRx,
@@ -210,34 +238,36 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
           persistentKeepalive,
         ] = line.split('\t');
 
-        const client = clients.find((client) => client.publicKey === publicKey);
-        if (!client) return;
+        const peer = peers.find((p) => p.publicKey === publicKey);
+        if (!peer) return;
 
-        client.latestHandshakeAt = latestHandshakeAt === '0'
+        peer.latestHandshakeAt = latestHandshakeAt === '0'
           ? null
           : new Date(Number(`${latestHandshakeAt}000`));
-        client.endpoint = endpoint === '(none)' ? null : endpoint;
-        client.transferRx = Number(transferRx);
-        client.transferTx = Number(transferTx);
-        client.persistentKeepalive = persistentKeepalive;
+        if (endpoint !== '(none)') {
+          peer.endpoint = endpoint;
+        }
+        peer.transferRx = Number(transferRx);
+        peer.transferTx = Number(transferTx);
+        peer.persistentKeepalive = persistentKeepalive;
       });
 
-    return clients;
+    return peers;
   }
 
-  async getClient({ clientId }) {
+  async getPeer({ peerId }) {
     const config = await this.getConfig();
-    const client = config.clients[clientId];
-    if (!client) {
-      throw new ServerError(`Client Not Found: ${clientId}`, 404);
+    const peer = config.peers[peerId];
+    if (!peer) {
+      throw new ServerError(`Peer Not Found: ${peerId}`, 404);
     }
 
-    return client;
+    return peer;
   }
 
   async getClientConfiguration({ clientId }) {
     const config = await this.getConfig();
-    const client = await this.getClient({ clientId });
+    const client = await this.getPeer({ peerId: clientId });
 
     return `
 [Interface]
@@ -271,83 +301,110 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     });
   }
 
-  async createClient({ name, expiredDate }) {
+  async createPeer(peerData) {
+    const { type, name } = peerData;
     if (!name) {
       throw new Error('Missing: Name');
     }
 
     const config = await this.getConfig();
-
-    const privateKey = await Util.exec('wg genkey');
-    const publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
-      log: 'echo ***hidden*** | wg pubkey',
-    });
-    const preSharedKey = await Util.exec('wg genpsk');
-
-    // Calculate next IP
-    let address;
-    for (let i = 2; i < 255; i++) {
-      const client = Object.values(config.clients).find((client) => {
-        return client.address === WG_DEFAULT_ADDRESS.replace('x', i);
-      });
-
-      if (!client) {
-        address = WG_DEFAULT_ADDRESS.replace('x', i);
-        break;
-      }
-    }
-
-    if (!address) {
-      throw new Error('Maximum number of clients reached.');
-    }
-    // Create Client
     const id = crypto.randomUUID();
-    const client = {
-      id,
-      name,
-      address,
-      privateKey,
-      publicKey,
-      preSharedKey,
 
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      expiredAt: null,
-      enabled: true,
-    };
-    if (expiredDate) {
-      client.expiredAt = new Date(expiredDate);
-      client.expiredAt.setHours(23);
-      client.expiredAt.setMinutes(59);
-      client.expiredAt.setSeconds(59);
+    if (type === 'client') {
+      const { expiredDate } = peerData;
+      const privateKey = await Util.exec('wg genkey');
+      const publicKey = await Util.exec(`echo ${privateKey} | wg pubkey`, {
+        log: 'echo ***hidden*** | wg pubkey',
+      });
+      const preSharedKey = await Util.exec('wg genpsk');
+
+      // Calculate next IP
+      let address;
+      for (let i = 2; i < 255; i++) {
+        const ip = WG_DEFAULT_ADDRESS.replace('x', i);
+        const peer = Object.values(config.peers).find((p) => p.address === ip);
+        if (!peer) {
+          address = ip;
+          break;
+        }
+      }
+
+      if (!address) {
+        throw new Error('Maximum number of clients reached.');
+      }
+
+      const client = {
+        id,
+        type: 'client',
+        name,
+        address,
+        privateKey,
+        publicKey,
+        preSharedKey,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        expiredAt: null,
+        enabled: true,
+      };
+      if (expiredDate) {
+        client.expiredAt = new Date(expiredDate);
+        client.expiredAt.setHours(23);
+        client.expiredAt.setMinutes(59);
+        client.expiredAt.setSeconds(59);
+      }
+      config.peers[id] = client;
+      await this.saveConfig();
+      return client;
+    } else if (type === 'server') {
+      const { publicKey, preSharedKey, endpoint, allowedIPs, persistentKeepalive } = peerData;
+      if (!publicKey || !allowedIPs) {
+        throw new Error('Missing required fields for server peer: publicKey, allowedIPs');
+      }
+
+      const serverPeer = {
+        id,
+        type: 'server',
+        name,
+        publicKey,
+        preSharedKey,
+        endpoint,
+        allowedIPs,
+        persistentKeepalive,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        enabled: true,
+      };
+      config.peers[id] = serverPeer;
+      await this.saveConfig();
+      return serverPeer;
+    } else {
+      throw new Error(`Invalid peer type: ${type}`);
     }
-    config.clients[id] = client;
-
-    await this.saveConfig();
-
-    return client;
   }
 
-  async deleteClient({ clientId }) {
+  async deletePeer({ peerId }) {
     const config = await this.getConfig();
 
-    if (config.clients[clientId]) {
-      delete config.clients[clientId];
+    if (config.peers[peerId]) {
+      delete config.peers[peerId];
       await this.saveConfig();
     }
   }
 
-  async enableClient({ clientId }) {
-    const client = await this.getClient({ clientId });
+  async enablePeer({ peerId }) {
+    const peer = await this.getPeer({ peerId });
 
-    client.enabled = true;
-    client.updatedAt = new Date();
+    peer.enabled = true;
+    peer.updatedAt = new Date();
 
     await this.saveConfig();
   }
 
   async generateOneTimeLink({ clientId }) {
-    const client = await this.getClient({ clientId });
+    const client = await this.getPeer({ peerId: clientId });
+    if (client.type !== 'client') {
+      throw new ServerError('One-time links are only available for clients.', 400);
+    }
     const key = `${clientId}-${Math.floor(Math.random() * 1000)}`;
     client.oneTimeLink = Math.abs(CRC32.str(key)).toString(16);
     client.oneTimeLinkExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -356,56 +413,65 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
 
   async eraseOneTimeLink({ clientId }) {
-    const client = await this.getClient({ clientId });
+    const client = await this.getPeer({ peerId: clientId });
+    if (client.type !== 'client') {
+      return;
+    }
     // client.oneTimeLink = null;
     client.oneTimeLinkExpiresAt = new Date(Date.now() + 10 * 1000);
     client.updatedAt = new Date();
     await this.saveConfig();
   }
 
-  async disableClient({ clientId }) {
-    const client = await this.getClient({ clientId });
+  async disablePeer({ peerId }) {
+    const peer = await this.getPeer({ peerId });
 
-    client.enabled = false;
-    client.updatedAt = new Date();
-
-    await this.saveConfig();
-  }
-
-  async updateClientName({ clientId, name }) {
-    const client = await this.getClient({ clientId });
-
-    client.name = name;
-    client.updatedAt = new Date();
+    peer.enabled = false;
+    peer.updatedAt = new Date();
 
     await this.saveConfig();
   }
 
-  async updateClientAddress({ clientId, address }) {
-    const client = await this.getClient({ clientId });
+  async updatePeerName({ peerId, name }) {
+    const peer = await this.getPeer({ peerId });
+
+    peer.name = name;
+    peer.updatedAt = new Date();
+
+    await this.saveConfig();
+  }
+
+  async updatePeerAddress({ peerId, address }) {
+    const peer = await this.getPeer({ peerId });
+    if (peer.type !== 'client') {
+      throw new ServerError('Address can only be updated for clients.', 400);
+    }
 
     if (!Util.isValidIPv4(address)) {
       throw new ServerError(`Invalid Address: ${address}`, 400);
     }
 
-    client.address = address;
-    client.updatedAt = new Date();
+    peer.address = address;
+    peer.updatedAt = new Date();
 
     await this.saveConfig();
   }
 
-  async updateClientExpireDate({ clientId, expireDate }) {
-    const client = await this.getClient({ clientId });
+  async updatePeerExpireDate({ peerId, expireDate }) {
+    const peer = await this.getPeer({ peerId });
+    if (peer.type !== 'client') {
+      throw new ServerError('Expiration date can only be updated for clients.', 400);
+    }
 
     if (expireDate) {
-      client.expiredAt = new Date(expireDate);
-      client.expiredAt.setHours(23);
-      client.expiredAt.setMinutes(59);
-      client.expiredAt.setSeconds(59);
+      peer.expiredAt = new Date(expireDate);
+      peer.expiredAt.setHours(23);
+      peer.expiredAt.setMinutes(59);
+      peer.expiredAt.setSeconds(59);
     } else {
-      client.expiredAt = null;
+      peer.expiredAt = null;
     }
-    client.updatedAt = new Date();
+    peer.updatedAt = new Date();
 
     await this.saveConfig();
   }
@@ -441,25 +507,26 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     let needSaveConfig = false;
     // Expires Feature
     if (WG_ENABLE_EXPIRES_TIME === 'true') {
-      for (const client of Object.values(config.clients)) {
-        if (client.enabled !== true) continue;
-        if (client.expiredAt !== null && new Date() > new Date(client.expiredAt)) {
-          debug(`Client ${client.id} expired.`);
+      for (const peer of Object.values(config.peers)) {
+        if (peer.type !== 'client' || peer.enabled !== true) continue;
+        if (peer.expiredAt !== null && new Date() > new Date(peer.expiredAt)) {
+          debug(`Client ${peer.id} expired.`);
           needSaveConfig = true;
-          client.enabled = false;
-          client.updatedAt = new Date();
+          peer.enabled = false;
+          peer.updatedAt = new Date();
         }
       }
     }
     // One Time Link Feature
     if (WG_ENABLE_ONE_TIME_LINKS === 'true') {
-      for (const client of Object.values(config.clients)) {
-        if (client.oneTimeLink !== null && new Date() > new Date(client.oneTimeLinkExpiresAt)) {
-          debug(`Client ${client.id} One Time Link expired.`);
+      for (const peer of Object.values(config.peers)) {
+        if (peer.type !== 'client') continue;
+        if (peer.oneTimeLink !== null && new Date() > new Date(peer.oneTimeLinkExpiresAt)) {
+          debug(`Client ${peer.id} One Time Link expired.`);
           needSaveConfig = true;
-          client.oneTimeLink = null;
-          client.oneTimeLinkExpiresAt = null;
-          client.updatedAt = new Date();
+          peer.oneTimeLink = null;
+          peer.oneTimeLinkExpiresAt = null;
+          peer.updatedAt = new Date();
         }
       }
     }
@@ -469,7 +536,8 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
 
   async getMetrics() {
-    const clients = await this.getClients();
+    const peers = await this.getPeers();
+    const clients = peers.filter((p) => p.type === 'client');
     let wireguardPeerCount = 0;
     let wireguardEnabledPeersCount = 0;
     let wireguardConnectedPeersCount = 0;
@@ -519,7 +587,8 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
 
   async getMetricsJSON() {
-    const clients = await this.getClients();
+    const peers = await this.getPeers();
+    const clients = peers.filter((p) => p.type === 'client');
     let wireguardPeerCount = 0;
     let wireguardEnabledPeersCount = 0;
     let wireguardConnectedPeersCount = 0;

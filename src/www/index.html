@@ -92,7 +92,14 @@
         <div class="shadow-md rounded-lg bg-white dark:bg-neutral-700 overflow-hidden">
           <div class="flex flex-row flex-auto items-center p-3 px-5 border-b-2 border-gray-100 dark:border-neutral-600">
             <div class="flex-grow">
-              <p class="text-2xl font-medium dark:text-neutral-200">{{$t("clients")}}</p>
+                <div class="flex border-b border-gray-200 dark:border-neutral-600">
+                    <button @click="activeTab = 'clients'" :class="{ 'text-red-800 dark:text-red-600 border-red-800 dark:border-red-600': activeTab === 'clients' }" class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-neutral-400 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-neutral-200 focus:outline-none">
+                        {{$t("clients")}}
+                    </button>
+                    <button @click="activeTab = 'servers'" :class="{ 'text-red-800 dark:text-red-600 border-red-800 dark:border-red-600': activeTab === 'servers' }" class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-neutral-400 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-neutral-200 focus:outline-none">
+                        {{$t("servers")}}
+                    </button>
+                </div>
             </div>
             <div class="flex md:block md:flex-shrink-0">
               <!-- Restore configuration -->
@@ -139,7 +146,7 @@
             </div>
           </div>
 
-          <div>
+          <div v-if="activeTab === 'clients'">
             <!-- Client -->
             <div v-if="clients && clients.length > 0" v-for="client in clients" :key="client.id"
               class="relative overflow-hidden border-b last:border-b-0 border-gray-100 dark:border-neutral-600 border-solid">
@@ -441,6 +448,20 @@
               </svg>
             </div>
           </div>
+          <div v-if="activeTab === 'servers'">
+            <p class="text-center m-10 text-gray-400 dark:text-neutral-400 text-sm">
+              {{$t("noServers")}}<br /><br />
+              <button @click="serverCreate = true;"
+                class="bg-red-800 hover:bg-red-700 text-white border-2 border-none py-2 px-4 rounded inline-flex items-center transition">
+                <svg class="w-4 mr-2" inline xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-sm">{{$t("newServer")}}</span>
+              </button>
+            </p>
+          </div>
         </div>
 
         <!-- QR Code-->
@@ -535,6 +556,81 @@
                   {{$t("create")}}
                 </button>
                 <button type="button" @click="clientCreate = null"
+                  class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-neutral-500 shadow-sm px-4 py-2 bg-white dark:bg-neutral-500 text-base font-medium text-gray-700 dark:text-neutral-50 hover:bg-gray-50 dark:hover:bg-neutral-600 dark:hover:border-neutral-600 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                  {{$t("cancel")}}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create Server Dialog -->
+        <div v-if="serverCreate" class="fixed z-10 inset-0 overflow-y-auto">
+          <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div class="absolute inset-0 bg-gray-500 dark:bg-black opacity-75 dark:opacity-50"></div>
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+              class="inline-block align-bottom bg-white dark:bg-neutral-700 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full"
+              role="dialog" aria-modal="true" aria-labelledby="modal-headline">
+              <div class="bg-white dark:bg-neutral-700 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                  <div
+                    class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-800 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg class="h-6 w-6 text-white" inline xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <div class="flex-grow mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-neutral-200" id="modal-headline">
+                      {{$t("newServer")}}
+                    </h3>
+                    <div class="mt-2">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="serverCreateName" :placeholder="$t('name')" />
+                    </div>
+                    <div class="mt-2">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="serverCreatePublicKey" :placeholder="$t('publicKey')" />
+                    </div>
+                    <div class="mt-2">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="serverCreateEndpoint" :placeholder="$t('endpoint')" />
+                    </div>
+                    <div class="mt-2">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="serverCreateAllowedIps" :placeholder="$t('allowedIPs')" />
+                    </div>
+                     <div class="mt-2">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="serverCreatePreSharedKey" :placeholder="$t('preSharedKey')" />
+                    </div>
+                    <div class="mt-2">
+                        <input
+                          class="rounded p-2 border-2 dark:bg-neutral-700 dark:text-neutral-200 border-gray-100 dark:border-neutral-600 focus:border-gray-200 focus:dark:border-neutral-500 dark:placeholder:text-neutral-400 outline-none w-full"
+                          type="text" v-model.trim="serverCreatePersistentKeepalive" :placeholder="$t('persistentKeepalive')" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-gray-50 dark:bg-neutral-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button v-if="serverCreateName.length" type="button" @click="createServer(); serverCreate = null"
+                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-800 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                  {{$t("create")}}
+                </button>
+                <button v-else type="button"
+                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-200 dark:bg-neutral-400 text-base font-medium text-white dark:text-neutral-300 sm:ml-3 sm:w-auto sm:text-sm cursor-not-allowed">
+                  {{$t("create")}}
+                </button>
+                <button type="button" @click="serverCreate = null"
                   class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-neutral-500 shadow-sm px-4 py-2 bg-white dark:bg-neutral-500 text-base font-medium text-gray-700 dark:text-neutral-50 hover:bg-gray-50 dark:hover:bg-neutral-600 dark:hover:border-neutral-600 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                   {{$t("cancel")}}
                 </button>
