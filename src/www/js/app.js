@@ -39,6 +39,11 @@ function sortByProperty(array, property, sort = true) {
   return array.sort((a, b) => (typeof a[property] === 'string' ? b[property].localeCompare(a[property]) : b[property] - a[property]));
 }
 
+const i18n = new VueI18n({
+  locale: localStorage.getItem('lang') || 'en',
+  fallbackLocale: 'en',
+  messages,
+});
 
 const UI_CHART_TYPES = [
   { type: false, strokeWidth: 0 },
