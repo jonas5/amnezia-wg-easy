@@ -159,7 +159,10 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
 # Server: ${server.name} (${serverId})
 [Peer]
 PublicKey = ${server.publicKey}
-AllowedIPs = ${server.allowedIPs}`;
+${server.presharedKey ? `PresharedKey = ${server.presharedKey}\n` : ''
+}${server.endpoint ? `Endpoint = ${server.endpoint}\n` : ''
+}${server.persistentKeepalive ? `PersistentKeepalive = ${server.persistentKeepalive}\n` : ''
+}AllowedIPs = ${server.allowedIPs}`;
     }
 
     debug('Config saving...');
@@ -361,7 +364,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     return client;
   }
 
-  async createServer({ name, publicKey, allowedIPs }) {
+  async createServer({ name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive }) {
     if (!name) {
       throw new Error('Missing: Name');
     }
@@ -380,7 +383,10 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
       id,
       name,
       publicKey,
+      presharedKey,
       allowedIPs,
+      endpoint,
+      persistentKeepalive,
       createdAt: new Date(),
       updatedAt: new Date(),
       enabled: true,

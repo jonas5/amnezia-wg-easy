@@ -348,6 +348,49 @@ new Vue({
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refreshServers().catch(console.error));
     },
+    importServer(e) {
+      e.preventDefault();
+      const file = e.currentTarget.files.item(0);
+      if (file) {
+        file.text()
+          .then((content) => {
+            const lines = content.split('\n');
+            const peer = {};
+            let inPeerSection = false;
+            for (const line of lines) {
+              if (line.trim().startsWith('[Peer]')) {
+                inPeerSection = true;
+                continue;
+              }
+              if (!inPeerSection) continue;
+              if (line.trim().startsWith('[')) {
+                inPeerSection = false;
+                continue;
+              }
+
+              const parts = line.split('=');
+              if (parts.length < 2) continue;
+              const key = parts[0].trim();
+              const value = parts.slice(1).join('=').trim();
+              peer[key] = value;
+            }
+
+            this.api.createServer({
+              name: file.name.replace('.conf', ''),
+              publicKey: peer.PublicKey,
+              presharedKey: peer.PresharedKey,
+              allowedIPs: peer.AllowedIPs,
+              endpoint: peer.Endpoint,
+              persistentKeepalive: peer.PersistentKeepalive,
+            })
+              .catch((err) => alert(err.message || err.toString()))
+              .finally(() => this.refreshServers().catch(console.error));
+          })
+          .catch((err) => alert(err.message || err.toString()));
+      } else {
+        alert('Failed to load your file!');
+      }
+    },
     deleteClient(client) {
       this.api.deleteClient({ clientId: client.id })
         .catch((err) => alert(err.message || err.toString()))

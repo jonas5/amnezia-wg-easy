@@ -263,8 +263,8 @@ module.exports = class Server {
         return { success: true };
       }))
       .post('/api/wireguard/server', defineEventHandler(async (event) => {
-        const { name, publicKey, allowedIPs } = await readBody(event);
-        await WireGuard.createServer({ name, publicKey, allowedIPs });
+        const { name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive } = await readBody(event);
+        await WireGuard.createServer({ name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive });
         return { success: true };
       }))
       .delete('/api/wireguard/client/:clientId', defineEventHandler(async (event) => {

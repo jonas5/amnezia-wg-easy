@@ -13,6 +13,7 @@ const messages = { // eslint-disable-line no-unused-vars
     new: 'New',
     newServer: 'New Server',
     noServers: 'There are no servers yet.',
+    import: 'Import',
     publicKey: 'Public Key',
     allowedIPs: 'Allowed IPs',
     deleteClient: 'Delete Client',
