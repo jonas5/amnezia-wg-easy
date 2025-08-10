@@ -396,33 +396,56 @@ PersistentKeepalive = ${peer.persistentKeepalive}
         file.text()
           .then((content) => {
             const lines = content.split('\n');
-            const peer = {};
-            let inPeerSection = false;
-            for (const line of lines) {
-              if (line.trim().startsWith('[Peer]')) {
-                inPeerSection = true;
-                continue;
-              }
-              if (!inPeerSection) continue;
-              if (line.trim().startsWith('[')) {
-                inPeerSection = false;
-                continue;
-              }
+            const config = {
+              interface: {},
+              peer: {},
+            };
+            let currentSection = null;
 
-              const parts = line.split('=');
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith('[Interface]')) {
+                currentSection = 'interface';
+                continue;
+              }
+              if (trimmedLine.startsWith('[Peer]')) {
+                currentSection = 'peer';
+                continue;
+              }
+              if (trimmedLine.startsWith('[')) {
+                currentSection = null;
+                continue;
+              }
+              if (!currentSection) continue;
+
+              const parts = trimmedLine.split('=');
               if (parts.length < 2) continue;
               const key = parts[0].trim();
               const value = parts.slice(1).join('=').trim();
-              peer[key] = value;
+              config[currentSection][key] = value;
             }
 
+            console.log('Imported server config:', config);
+
             this.api.createServer({
-              name: file.name.replace('.conf', ''),
-              publicKey: peer.PublicKey,
-              presharedKey: peer.PresharedKey,
-              allowedIPs: peer.AllowedIPs,
-              endpoint: peer.Endpoint,
-              persistentKeepalive: peer.PersistentKeepalive,
+              privateKey: config.interface.PrivateKey,
+              address: config.interface.Address,
+              dns: config.interface.DNS,
+              mtu: config.interface.MTU,
+              jc: config.interface.Jc,
+              jmin: config.interface.Jmin,
+              jmax: config.interface.Jmax,
+              s1: config.interface.S1,
+              s2: config.interface.S2,
+              h1: config.interface.H1,
+              h2: config.interface.H2,
+              h3: config.interface.H3,
+              h4: config.interface.H4,
+              publicKey: config.peer.PublicKey,
+              presharedKey: config.peer.PresharedKey,
+              allowedIPs: config.peer.AllowedIPs,
+              endpoint: config.peer.Endpoint,
+              persistentKeepalive: config.peer.PersistentKeepalive,
             })
               .catch((err) => alert(err.message || err.toString()))
               .finally(() => this.refreshServers().catch(console.error));
