@@ -361,6 +361,7 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
   }
 
   async createServer({ privateKey, address, dns, mtu, jc, jmin, jmax, s1, s2, h1, h2, h3, h4, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive }) {
+    debug('Creating server with params:', { privateKey, address, dns, mtu, jc, jmin, jmax, s1, s2, h1, h2, h3, h4, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive });
     const config = await this.getConfig();
     const interfaceName = await this.getNextInterfaceName();
 
