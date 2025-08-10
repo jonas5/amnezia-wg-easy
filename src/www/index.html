@@ -449,27 +449,73 @@
             </div>
           </div>
           <div v-if="activeTab === 'servers'">
-            <p class="text-center m-10 text-gray-400 dark:text-neutral-400 text-sm">
-              {{$t("noServers")}}<br /><br />
-              <button @click="serverCreate = true;"
-                class="bg-red-800 hover:bg-red-700 text-white border-2 border-none py-2 px-4 rounded inline-flex items-center transition">
-                <svg class="w-4 mr-2" inline xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span class="text-sm">{{$t("newServer")}}</span>
-              </button>
-              <label for="importServer"
-                class="bg-red-800 hover:bg-red-700 text-white border-2 border-none py-2 px-4 rounded inline-flex items-center transition cursor-pointer">
-                <svg class="w-4 mr-2" inline xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                <span class="text-sm">{{$t("import")}}</span>
-                <input id="importServer" type="file" name="serverfile" accept=".conf" @change="importServer" class="hidden"/>
-              </label>
-            </p>
+            <div v-if="servers && servers.length > 0" v-for="server in servers" :key="server.id"
+              class="relative overflow-hidden border-b last:border-b-0 border-gray-100 dark:border-neutral-600 border-solid">
+              <div class="relative py-3 md:py-5 px-3 z-10 flex flex-col sm:flex-row justify-between gap-3">
+                <div class="flex gap-3 md:gap-4 w-full items-center ">
+                  <!-- Avatar -->
+                  <div class="h-10 w-10 mt-2 self-start rounded-full bg-gray-50 relative">
+                    <svg class="w-6 m-2 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                      fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clip-rule="evenodd" />
+                    </svg>
+                    <img v-if="server.avatar" :src="server.avatar" class="w-10 rounded-full absolute top-0 left-0" />
+                  </div>
+                  <!-- Name & Info -->
+                  <div class="flex flex-col xxs:flex-row w-full gap-2">
+                    <!-- Name -->
+                    <div class="flex flex-col flex-grow gap-1">
+                      <div class="text-gray-700 dark:text-neutral-200 group text-sm md:text-base"
+                        :title="$t('createdOn') + dateTime(new Date(server.createdAt))">
+                        <span>{{server.name}}</span>
+                      </div>
+                      <!-- Address -->
+                      <div class=" block md:inline-block pb-1 md:pb-0 text-gray-500 dark:text-neutral-400 text-xs">
+                        <span>{{server.endpoint}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-end">
+                  <div class="text-gray-400 dark:text-neutral-400 flex gap-1 items-center justify-between">
+                    <!-- Delete -->
+                    <button
+                      class="align-middle bg-gray-100 dark:bg-neutral-600 dark:text-neutral-300 hover:bg-red-800 dark:hover:bg-red-800 hover:text-white dark:hover:text-white p-2 rounded transition"
+                      :title="$t('deleteClient')" @click="deletePeer(server)">
+                      <svg class="w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="servers && servers.length === 0">
+              <p class="text-center m-10 text-gray-400 dark:text-neutral-400 text-sm">
+                {{$t("noServers")}}<br /><br />
+                <button @click="serverCreate = true;"
+                  class="bg-red-800 hover:bg-red-700 text-white border-2 border-none py-2 px-4 rounded inline-flex items-center transition">
+                  <svg class="w-4 mr-2" inline xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span class="text-sm">{{$t("newServer")}}</span>
+                </button>
+                <label for="importServer"
+                  class="bg-red-800 hover:bg-red-700 text-white border-2 border-none py-2 px-4 rounded inline-flex items-center transition cursor-pointer">
+                  <svg class="w-4 mr-2" inline xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span class="text-sm">{{$t("import")}}</span>
+                  <input id="importServer" type="file" name="serverfile" accept=".conf" @change="importServer" class="hidden"/>
+                </label>
+              </p>
+            </div>
           </div>
         </div>
 
