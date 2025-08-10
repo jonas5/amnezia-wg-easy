@@ -139,6 +139,39 @@ class API {
     });
   }
 
+  async getServers() {
+    return this.call({
+      method: 'get',
+      path: '/wireguard/servers',
+    }).then((servers) => servers.map((server) => ({
+      ...server,
+      createdAt: new Date(server.createdAt),
+      updatedAt: new Date(server.updatedAt),
+      latestHandshakeAt: server.latestHandshakeAt !== null
+        ? new Date(server.latestHandshakeAt)
+        : null,
+    })));
+  }
+
+  async createServer({
+    name, publicKey, preSharedKey, endpoint, allowedIps,
+  }) {
+    return this.call({
+      method: 'post',
+      path: '/wireguard/servers',
+      body: {
+        name, publicKey, preSharedKey, endpoint, allowedIps,
+      },
+    });
+  }
+
+  async deleteServer({ serverId }) {
+    return this.call({
+      method: 'delete',
+      path: `/wireguard/servers/${serverId}`,
+    });
+  }
+
   async showOneTimeLink({ clientId }) {
     return this.call({
       method: 'post',

@@ -86,6 +86,15 @@ new Vue({
     clientEditExpireDateId: null,
     qrcode: null,
 
+    currentTab: 'clients',
+    servers: null,
+    serverCreate: null,
+    serverCreateName: '',
+    serverCreatePublicKey: '',
+    serverCreatePreSharedKey: '',
+    serverCreateEndpoint: '',
+    serverCreateAllowedIps: '',
+
     currentRelease: null,
     latestRelease: null,
 
@@ -202,7 +211,11 @@ new Vue({
     } = {}) {
       if (!this.authenticated) return;
 
-      const clients = await this.api.getClients();
+      const [clients, servers] = await Promise.all([
+        this.api.getClients(),
+        this.api.getServers(),
+      ]);
+
       this.clients = clients.map((client) => {
         if (client.name.includes('@') && client.name.includes('.') && this.avatarSettings.gravatar) {
           client.avatar = `https://gravatar.com/avatar/${sha256(client.name.toLowerCase().trim())}.jpg`;
@@ -266,6 +279,8 @@ new Vue({
       if (this.enableSortClient) {
         this.clients = sortByProperty(this.clients, 'name', this.sortClient);
       }
+
+      this.servers = servers;
     },
     login(e) {
       e.preventDefault();
@@ -310,6 +325,30 @@ new Vue({
       if (!name) return;
 
       this.api.createClient({ name, expiredDate })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => this.refresh().catch(console.error));
+    },
+    createServer() {
+      const name = this.serverCreateName;
+      const publicKey = this.serverCreatePublicKey;
+      const preSharedKey = this.serverCreatePreSharedKey;
+      const endpoint = this.serverCreateEndpoint;
+      const allowedIps = this.serverCreateAllowedIps;
+
+      if (!name || !publicKey || !endpoint || !allowedIps) return;
+
+      this.api.createServer({
+        name,
+        publicKey,
+        preSharedKey,
+        endpoint,
+        allowedIps,
+      })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => this.refresh().catch(console.error));
+    },
+    deleteServer(server) {
+      this.api.deleteServer({ serverId: server.id })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },

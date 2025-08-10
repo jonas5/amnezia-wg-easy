@@ -320,6 +320,23 @@ module.exports = class Server {
         const { expireDate } = await readBody(event);
         await WireGuard.updateClientExpireDate({ clientId, expireDate });
         return { success: true };
+      }))
+      .get('/api/wireguard/servers', defineEventHandler(() => {
+        return WireGuard.getServers();
+      }))
+      .post('/api/wireguard/servers', defineEventHandler(async (event) => {
+        const {
+          name, publicKey, preSharedKey, endpoint, allowedIps,
+        } = await readBody(event);
+        await WireGuard.createServerPeer({
+          name, publicKey, preSharedKey, endpoint, allowedIps,
+        });
+        return { success: true };
+      }))
+      .delete('/api/wireguard/servers/:serverId', defineEventHandler(async (event) => {
+        const serverId = getRouterParam(event, 'serverId');
+        await WireGuard.deleteServerPeer({ serverId });
+        return { success: true };
       }));
 
     const safePathJoin = (base, target) => {

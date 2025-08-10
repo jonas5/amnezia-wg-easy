@@ -74,8 +74,12 @@ module.exports = class WireGuard {
             h4: H4,
           },
           clients: {},
+          servers: {},
         };
         debug('Configuration generated.');
+      }
+      if (!config.servers) {
+        config.servers = {};
       }
 
       return config;
@@ -148,6 +152,20 @@ H4 = ${config.server.h4}
 PublicKey = ${client.publicKey}
 ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
 }AllowedIPs = ${client.address}/32`;
+    }
+
+    for (const [serverId, server] of Object.entries(config.servers)) {
+      if (!server.enabled) continue;
+
+      result += `
+
+# Server: ${server.name} (${serverId})
+[Peer]
+PublicKey = ${server.publicKey}
+${server.preSharedKey ? `PresharedKey = ${server.preSharedKey}\n` : ''
+}AllowedIPs = ${server.allowedIps}
+Endpoint = ${server.endpoint}
+PersistentKeepalive = ${WG_PERSISTENT_KEEPALIVE}`;
     }
 
     debug('Config saving...');
@@ -333,6 +351,115 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     if (config.clients[clientId]) {
       delete config.clients[clientId];
+      await this.saveConfig();
+    }
+  }
+
+  async getServers() {
+    const config = await this.getConfig();
+    const servers = Object.entries(config.servers).map(([serverId, server]) => ({
+      id: serverId,
+      name: server.name,
+      enabled: server.enabled,
+      publicKey: server.publicKey,
+      preSharedKey: server.preSharedKey,
+      endpoint: server.endpoint,
+      allowedIps: server.allowedIps,
+      createdAt: new Date(server.createdAt),
+      updatedAt: new Date(server.updatedAt),
+      persistentKeepalive: null,
+      latestHandshakeAt: null,
+      transferRx: null,
+      transferTx: null,
+    }));
+
+    // Loop WireGuard status
+    const dump = await Util.exec('wg show wg0 dump', {
+      log: false,
+    });
+    dump
+      .trim()
+      .split('\n')
+      .slice(1)
+      .forEach((line) => {
+        const [
+          publicKey,
+          preSharedKey, // eslint-disable-line no-unused-vars
+          endpoint, // eslint-disable-line no-unused-vars
+          allowedIps, // eslint-disable-line no-unused-vars
+          latestHandshakeAt,
+          transferRx,
+          transferTx,
+          persistentKeepalive,
+        ] = line.split('\t');
+
+        const server = servers.find((server) => server.publicKey === publicKey);
+        if (!server) return;
+
+        server.latestHandshakeAt = latestHandshakeAt === '0'
+          ? null
+          : new Date(Number(`${latestHandshakeAt}000`));
+        server.transferRx = Number(transferRx);
+        server.transferTx = Number(transferTx);
+        server.persistentKeepalive = persistentKeepalive;
+      });
+
+    return servers;
+  }
+
+  async getServer({ serverId }) {
+    const config = await this.getConfig();
+    const server = config.servers[serverId];
+    if (!server) {
+      throw new ServerError(`Server Not Found: ${serverId}`, 404);
+    }
+
+    return server;
+  }
+
+  async createServerPeer({
+    name, publicKey, preSharedKey, endpoint, allowedIps,
+  }) {
+    if (!name) {
+      throw new Error('Missing: Name');
+    }
+    if (!publicKey) {
+      throw new Error('Missing: Public Key');
+    }
+    if (!endpoint) {
+      throw new Error('Missing: Endpoint');
+    }
+    if (!allowedIps) {
+      throw new Error('Missing: Allowed IPs');
+    }
+
+    const config = await this.getConfig();
+
+    // Create Server
+    const id = crypto.randomUUID();
+    const server = {
+      id,
+      name,
+      publicKey,
+      preSharedKey,
+      endpoint,
+      allowedIps,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      enabled: true,
+    };
+    config.servers[id] = server;
+
+    await this.saveConfig();
+
+    return server;
+  }
+
+  async deleteServerPeer({ serverId }) {
+    const config = await this.getConfig();
+
+    if (config.servers[serverId]) {
+      delete config.servers[serverId];
       await this.saveConfig();
     }
   }
