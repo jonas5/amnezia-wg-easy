@@ -126,7 +126,7 @@ module.exports = class WireGuard {
 # Interface: ${interfaceName}
 [Interface]
 PrivateKey = ${interfaceConfig.privateKey}
-Address = ${interfaceConfig.address}/24
+Address = ${interfaceConfig.address}
 ListenPort = ${interfaceConfig.listenPort || WG_PORT}
 PreUp = ${interfaceConfig.preUp || ''}
 PostUp = ${interfaceConfig.postUp || ''}
