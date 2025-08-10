@@ -409,7 +409,9 @@ PersistentKeepalive = ${peer.persistentKeepalive}
                 currentSection = line.substring(1, line.length - 1);
                 config[currentSection] = {};
               } else if (currentSection && line.includes('=')) {
-                const [key, value] = line.split('=').map(s => s.trim());
+                const index = line.indexOf('=');
+                const key = line.substring(0, index).trim();
+                const value = line.substring(index + 1).trim();
                 config[currentSection][key] = value;
                 console.log(`Parsed [${currentSection}] ${key}: ${value}`);
               }
