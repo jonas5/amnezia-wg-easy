@@ -511,18 +511,17 @@ new Vue({
         this.enableExpireTime = false;
       });
 
-    this.api.getAvatarSettings()
-      .then((res) => {
-        this.avatarSettings = res;
-      })
-      .catch(() => {
-          this.avatarSettings = {
-            'dicebear': null,
-            'gravatar': false,
-          };
-      });
-
     Promise.resolve().then(async () => {
+      this.api.getAvatarSettings()
+        .then((res) => {
+          this.avatarSettings = res;
+        })
+        .catch(() => {
+            this.avatarSettings = {
+              'dicebear': null,
+              'gravatar': false,
+            };
+        });
       const lang = await this.api.getLang();
       if (lang !== localStorage.getItem('lang') && i18n.availableLocales.includes(lang)) {
         localStorage.setItem('lang', lang);
