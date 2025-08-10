@@ -139,11 +139,26 @@ class API {
     });
   }
 
-  async createServer({ name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive }) {
+  async createServer({ privateKey, address, dns, mtu, jc, jmin, jmax, s1, s2, h1, h2, h3, h4, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive }) {
     return this.call({
       method: 'post',
       path: '/wireguard/server',
-      body: { name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive },
+      body: { privateKey, address, dns, mtu, jc, jmin, jmax, s1, s2, h1, h2, h3, h4, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive },
+    });
+  }
+
+  async updateServer({ interfaceName, config }) {
+    return this.call({
+      method: 'put',
+      path: `/wireguard/server/${interfaceName}`,
+      body: { config },
+    });
+  }
+
+  async deleteServer({ interfaceName }) {
+    return this.call({
+      method: 'delete',
+      path: `/wireguard/server/${interfaceName}`,
     });
   }
 

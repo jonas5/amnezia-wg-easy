@@ -92,6 +92,8 @@ new Vue({
     serverCreateName: '',
     serverCreatePublicKey: '',
     serverCreateAllowedIPs: '',
+    serverEdit: null,
+    serverEditConfig: '',
 
     currentRelease: null,
     latestRelease: null,
@@ -337,6 +339,45 @@ new Vue({
       this.api.createClient({ name, expiredDate })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
+    },
+    editServer(server) {
+      this.serverEdit = server;
+      const peer = Object.values(server.peers)[0];
+      this.serverEditConfig = `[Interface]
+PrivateKey = ${server.privateKey}
+Address = ${server.address}
+DNS = ${server.dns}
+MTU = ${server.mtu}
+Jc = ${server.jc}
+Jmin = ${server.jmin}
+Jmax = ${server.jmax}
+S1 = ${server.s1}
+S2 = ${server.s2}
+H1 = ${server.h1}
+H2 = ${server.h2}
+H3 = ${server.h3}
+H4 = ${server.h4}
+
+[Peer]
+PublicKey = ${peer.publicKey}
+PresharedKey = ${peer.presharedKey}
+AllowedIPs = ${peer.allowedIPs}
+Endpoint = ${peer.endpoint}
+PersistentKeepalive = ${peer.persistentKeepalive}
+`;
+    },
+    updateServer() {
+      const config = this.serverEditConfig;
+      this.api.updateServer({ interfaceName: this.serverEdit.name, config })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => this.refreshServers().catch(console.error));
+    },
+    deleteServer(server) {
+      if (confirm(this.$t('deleteDialog1') + ' ' + server.name + '? ' + this.$t('deleteDialog2'))) {
+        this.api.deleteServer({ interfaceName: server.name })
+          .catch((err) => alert(err.message || err.toString()))
+          .finally(() => this.refreshServers().catch(console.error));
+      }
     },
     createServer() {
       const name = this.serverCreateName;
