@@ -395,64 +395,47 @@ PersistentKeepalive = ${peer.persistentKeepalive}
       if (file) {
         file.text()
           .then((content) => {
+            console.log('--- Imported File Content ---');
+            console.log(content);
+            console.log('-----------------------------');
+
             const lines = content.split('\n');
-            const config = {
-              interface: {},
-              peer: {},
-            };
-            let inInterfaceSection = false;
-            let inPeerSection = false;
+            const config = {};
+            let currentSection = '';
 
-            for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (trimmedLine === '[Interface]') {
-                inInterfaceSection = true;
-                inPeerSection = false;
-                continue;
+            lines.forEach(line => {
+              line = line.trim();
+              if (line.startsWith('[') && line.endsWith(']')) {
+                currentSection = line.substring(1, line.length - 1);
+                config[currentSection] = {};
+              } else if (currentSection && line.includes('=')) {
+                const [key, value] = line.split('=').map(s => s.trim());
+                config[currentSection][key] = value;
+                console.log(`Parsed [${currentSection}] ${key}: ${value}`);
               }
-              if (trimmedLine === '[Peer]') {
-                inPeerSection = true;
-                inInterfaceSection = false;
-                continue;
-              }
-
-              if (inInterfaceSection) {
-                const parts = trimmedLine.split('=');
-                if (parts.length < 2) continue;
-                const key = parts[0].trim();
-                const value = parts.slice(1).join('=').trim();
-                config.interface[key] = value;
-              }
-              if (inPeerSection) {
-                const parts = trimmedLine.split('=');
-                if (parts.length < 2) continue;
-                const key = parts[0].trim();
-                const value = parts.slice(1).join('=').trim();
-                config.peer[key] = value;
-              }
-            }
+            });
 
             console.log('Imported server config:', config);
 
             this.api.createServer({
-              privateKey: config.interface.PrivateKey,
-              address: config.interface.Address,
-              dns: config.interface.DNS,
-              mtu: config.interface.MTU,
-              jc: config.interface.Jc,
-              jmin: config.interface.Jmin,
-              jmax: config.interface.Jmax,
-              s1: config.interface.S1,
-              s2: config.interface.S2,
-              h1: config.interface.H1,
-              h2: config.interface.H2,
-              h3: config.interface.H3,
-              h4: config.interface.H4,
-              publicKey: config.peer.PublicKey,
-              presharedKey: config.peer.PresharedKey,
-              allowedIPs: config.peer.AllowedIPs,
-              endpoint: config.peer.Endpoint,
-              persistentKeepalive: config.peer.PersistentKeepalive,
+              privateKey: config.Interface.PrivateKey,
+              address: config.Interface.Address,
+              dns: config.Interface.DNS,
+              mtu: config.Interface.MTU,
+              jc: config.Interface.Jc,
+              jmin: config.Interface.Jmin,
+              jmax: config.Interface.Jmax,
+              s1: config.Interface.S1,
+              s2: config.Interface.S2,
+              h1: config.Interface.H1,
+              h2: config.Interface.H2,
+              h3: config.Interface.H3,
+              h4: config.Interface.H4,
+              publicKey: config.Peer.PublicKey,
+              presharedKey: config.Peer.PresharedKey,
+              allowedIPs: config.Peer.AllowedIPs,
+              endpoint: config.Peer.Endpoint,
+              persistentKeepalive: config.Peer.PersistentKeepalive,
             })
               .catch((err) => alert(err.message || err.toString()))
               .finally(() => this.refreshServers().catch(console.error));
