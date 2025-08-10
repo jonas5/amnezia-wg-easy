@@ -133,17 +133,17 @@ class API {
   }
 
   async getServers() {
-    return this.request({
-      method: 'GET',
-      path: 'wireguard/servers',
+    return this.call({
+      method: 'get',
+      path: '/wireguard/servers',
     });
   }
 
-  async createServer({ name, publicKey, allowedIPs }) {
-    return this.request({
-      method: 'POST',
-      path: 'wireguard/server',
-      body: { name, publicKey, allowedIPs },
+  async createServer({ name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive }) {
+    return this.call({
+      method: 'post',
+      path: '/wireguard/server',
+      body: { name, publicKey, presharedKey, allowedIPs, endpoint, persistentKeepalive },
     });
   }
 
