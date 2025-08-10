@@ -92,6 +92,15 @@ module.exports = class WireGuard {
         debug('Migration complete.');
       }
 
+      // Set peer type if not set
+      if (config.peers) {
+        for (const peer of Object.values(config.peers)) {
+          if (!peer.type) {
+            peer.type = 'client';
+          }
+        }
+      }
+
       return config;
     });
 
