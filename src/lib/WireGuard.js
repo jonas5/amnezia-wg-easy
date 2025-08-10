@@ -74,6 +74,7 @@ module.exports = class WireGuard {
             h4: H4,
           },
           clients: {},
+          servers: {},
         };
         debug('Configuration generated.');
       }
@@ -148,6 +149,19 @@ H4 = ${config.server.h4}
 PublicKey = ${client.publicKey}
 ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
 }AllowedIPs = ${client.address}/32`;
+    }
+
+    for (const [serverId, server] of Object.entries(config.servers)) {
+      if (!server.enabled) continue;
+
+      result += `
+
+# Server Peer: ${server.name} (${serverId})
+[Peer]
+PublicKey = ${server.publicKey}
+${server.preSharedKey ? `PresharedKey = ${server.preSharedKey}\n` : ''
+}AllowedIPs = ${server.allowedIPs}
+${server.endpoint ? `Endpoint = ${server.endpoint}\n` : ''}`;
     }
 
     debug('Config saving...');
@@ -333,6 +347,160 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
 
     if (config.clients[clientId]) {
       delete config.clients[clientId];
+      await this.saveConfig();
+    }
+  }
+
+  async getServerPeers() {
+    const config = await this.getConfig();
+    const servers = Object.entries(config.servers).map(([serverId, server]) => ({
+      id: serverId,
+      name: server.name,
+      enabled: server.enabled,
+      address: server.address,
+      publicKey: server.publicKey,
+      createdAt: new Date(server.createdAt),
+      updatedAt: new Date(server.updatedAt),
+      allowedIPs: server.allowedIPs,
+      downloadableConfig: 'privateKey' in server,
+      latestHandshakeAt: null,
+      transferRx: null,
+      transferTx: null,
+      endpoint: null,
+    }));
+
+    // Loop WireGuard status
+    const dump = await Util.exec('wg show wg0 dump', {
+      log: false,
+    });
+    dump
+      .trim()
+      .split('\n')
+      .slice(1)
+      .forEach((line) => {
+        const [
+          publicKey,
+          preSharedKey, // eslint-disable-line no-unused-vars
+          endpoint, // eslint-disable-line no-unused-vars
+          allowedIps, // eslint-disable-line no-unused-vars
+          latestHandshakeAt,
+          transferRx,
+          transferTx,
+          persistentKeepalive,
+        ] = line.split('\t');
+
+        const server = servers.find((server) => server.publicKey === publicKey);
+        if (!server) return;
+
+        server.latestHandshakeAt = latestHandshakeAt === '0'
+          ? null
+          : new Date(Number(`${latestHandshakeAt}000`));
+        server.endpoint = endpoint === '(none)' ? null : endpoint;
+        server.transferRx = Number(transferRx);
+        server.transferTx = Number(transferTx);
+        server.persistentKeepalive = persistentKeepalive;
+      });
+
+    return servers;
+  }
+
+  async getServerPeer({ serverId }) {
+    const config = await this.getConfig();
+    const server = config.servers[serverId];
+    if (!server) {
+      throw new ServerError(`Server Peer Not Found: ${serverId}`, 404);
+    }
+
+    return server;
+  }
+
+  async getServerPeerConfiguration({ serverId }) {
+    const config = await this.getConfig();
+    const server = await this.getServerPeer({ serverId });
+
+    return `
+[Interface]
+PrivateKey = ${server.privateKey ? `${server.privateKey}` : 'REPLACE_ME'}
+Address = ${server.address}/24
+${WG_DEFAULT_DNS ? `DNS = ${WG_DEFAULT_DNS}\n` : ''}\
+${WG_MTU ? `MTU = ${WG_MTU}\n` : ''}
+
+[Peer]
+PublicKey = ${config.server.publicKey}
+${server.preSharedKey ? `PresharedKey = ${server.preSharedKey}\n` : ''
+}AllowedIPs = ${config.server.address.replace('/24', '/32')}
+PersistentKeepalive = ${WG_PERSISTENT_KEEPALIVE}
+Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
+  }
+
+  async importServerPeer({ name, configuration }) {
+    if (!name) {
+      throw new Error('Missing: Name');
+    }
+    if (!configuration) {
+      throw new Error('Missing: Configuration');
+    }
+
+    const config = await this.getConfig();
+
+    const publicKeyMatch = configuration.match(/PublicKey\s*=\s*([A-Za-z0-9+/=]+)/);
+    const presharedKeyMatch = configuration.match(/PresharedKey\s*=\s*([A-Za-z0-9+/=]+)/);
+    const allowedIPsMatch = configuration.match(/AllowedIPs\s*=\s*(.*)/);
+    const endpointMatch = configuration.match(/Endpoint\s*=\s*(.*)/);
+
+    if (!publicKeyMatch || !publicKeyMatch[1]) {
+      throw new Error('Invalid Configuration: Missing PublicKey');
+    }
+
+    const publicKey = publicKeyMatch[1];
+    const preSharedKey = presharedKeyMatch ? presharedKeyMatch[1] : null;
+    const allowedIPs = allowedIPsMatch ? allowedIPsMatch[1] : '0.0.0.0/0';
+    const endpoint = endpointMatch ? endpointMatch[1] : null;
+
+    // Calculate next IP, this will be the address of the peer in our server
+    let address;
+    for (let i = 2; i < 255; i++) {
+      const peer = Object.values(config.clients).find((client) => {
+        return client.address === WG_DEFAULT_ADDRESS.replace('x', i);
+      }) || Object.values(config.servers).find((server) => {
+        return server.address === WG_DEFAULT_ADDRESS.replace('x', i);
+      });
+
+      if (!peer) {
+        address = WG_DEFAULT_ADDRESS.replace('x', i);
+        break;
+      }
+    }
+
+    if (!address) {
+      throw new Error('Maximum number of peers reached.');
+    }
+
+    const id = crypto.randomUUID();
+    const server = {
+      id,
+      name,
+      address,
+      publicKey,
+      preSharedKey,
+      allowedIPs,
+      endpoint,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      enabled: true,
+    };
+    config.servers[id] = server;
+
+    await this.saveConfig();
+
+    return server;
+  }
+
+  async deleteServerPeer({ serverId }) {
+    const config = await this.getConfig();
+
+    if (config.servers[serverId]) {
+      delete config.servers[serverId];
       await this.saveConfig();
     }
   }

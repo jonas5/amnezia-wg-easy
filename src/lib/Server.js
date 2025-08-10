@@ -320,6 +320,32 @@ module.exports = class Server {
         const { expireDate } = await readBody(event);
         await WireGuard.updateClientExpireDate({ clientId, expireDate });
         return { success: true };
+      }))
+      .get('/api/wireguard/servers', defineEventHandler(() => {
+        return WireGuard.getServerPeers();
+      }))
+      .get('/api/wireguard/server/:serverId/configuration', defineEventHandler(async (event) => {
+        const serverId = getRouterParam(event, 'serverId');
+        const server = await WireGuard.getServerPeer({ serverId });
+        const config = await WireGuard.getServerPeerConfiguration({ serverId });
+        const configName = server.name
+          .replace(/[^a-zA-Z0-9_=+.-]/g, '-')
+          .replace(/(-{2,}|-$)/g, '-')
+          .replace(/-$/, '')
+          .substring(0, 32);
+        setHeader(event, 'Content-Disposition', `attachment; filename="${configName || serverId}.conf"`);
+        setHeader(event, 'Content-Type', 'text/plain');
+        return config;
+      }))
+      .post('/api/wireguard/server/import', defineEventHandler(async (event) => {
+        const { name, configuration } = await readBody(event);
+        await WireGuard.importServerPeer({ name, configuration });
+        return { success: true };
+      }))
+      .delete('/api/wireguard/server/:serverId', defineEventHandler(async (event) => {
+        const serverId = getRouterParam(event, 'serverId');
+        await WireGuard.deleteServerPeer({ serverId });
+        return { success: true };
       }));
 
     const safePathJoin = (base, target) => {

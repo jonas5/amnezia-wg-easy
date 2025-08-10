@@ -199,4 +199,29 @@ class API {
     });
   }
 
+  async getServers() {
+    return this.call({
+      method: 'get',
+      path: '/wireguard/servers',
+    }).then((servers) => servers.map((server) => ({
+      ...server,
+      createdAt: new Date(server.createdAt),
+      updatedAt: new Date(server.updatedAt),
+    })));
+  }
+
+  async importServerPeer({ name, configuration }) {
+    return this.call({
+      method: 'post',
+      path: '/wireguard/server/import',
+      body: { name, configuration },
+    });
+  }
+
+  async deleteServerPeer({ serverId }) {
+    return this.call({
+      method: 'delete',
+      path: `/wireguard/server/${serverId}`,
+    });
+  }
 }

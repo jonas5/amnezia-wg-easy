@@ -40,6 +40,13 @@ const messages = { // eslint-disable-line no-unused-vars
     ExpireDate: 'Expire Date',
     Permanent: 'Permanent',
     OneTimeLink: 'Generate short one time link',
+    servers: 'Servers',
+    newServer: 'New Server',
+    noServers: 'There are no servers yet.',
+    deleteServer: 'Delete Server',
+    importServer: 'Import Server',
+    configuration: 'Configuration',
+    import: 'Import',
   },
   ua: {
     name: 'Ім`я',

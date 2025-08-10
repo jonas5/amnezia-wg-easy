@@ -86,6 +86,13 @@ new Vue({
     clientEditExpireDateId: null,
     qrcode: null,
 
+    tab: 'clients',
+    servers: null,
+    serverCreate: null,
+    serverCreateName: '',
+    serverCreateConfig: '',
+    serverDelete: null,
+
     currentRelease: null,
     latestRelease: null,
 
@@ -313,6 +320,36 @@ new Vue({
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
     },
+    async refreshServers() {
+      if (!this.authenticated) return;
+      const servers = await this.api.getServers();
+      this.servers = servers.map((server) => {
+        if (server.name.includes('@') && server.name.includes('.') && this.avatarSettings.gravatar) {
+          server.avatar = `https://gravatar.com/avatar/${sha256(server.name.toLowerCase().trim())}.jpg`;
+        } else if (this.avatarSettings.dicebear) {
+          server.avatar = `https://api.dicebear.com/9.x/${this.avatarSettings.dicebear}/svg?seed=${sha256(server.name.toLowerCase().trim())}`
+        }
+        return server;
+      });
+    },
+    importServer() {
+      const name = this.serverCreateName;
+      const configuration = this.serverCreateConfig;
+      if (!name || !configuration) return;
+
+      this.api.importServerPeer({ name, configuration })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => {
+          this.refreshServers().catch(console.error);
+          this.serverCreateName = '';
+          this.serverCreateConfig = '';
+        });
+    },
+    deleteServer(server) {
+      this.api.deleteServerPeer({ serverId: server.id })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => this.refreshServers().catch(console.error));
+    },
     deleteClient(client) {
       this.api.deleteClient({ clientId: client.id })
         .catch((err) => alert(err.message || err.toString()))
@@ -413,6 +450,9 @@ new Vue({
         this.refresh({
           updateCharts: this.updateCharts,
         }).catch((err) => {
+          alert(err.message || err.toString());
+        });
+        this.refreshServers().catch((err) => {
           alert(err.message || err.toString());
         });
       })
