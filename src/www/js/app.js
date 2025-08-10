@@ -400,29 +400,36 @@ PersistentKeepalive = ${peer.persistentKeepalive}
               interface: {},
               peer: {},
             };
-            let currentSection = null;
+            let inInterfaceSection = false;
+            let inPeerSection = false;
 
             for (const line of lines) {
               const trimmedLine = line.trim();
-              if (trimmedLine.startsWith('[Interface]')) {
-                currentSection = 'interface';
+              if (trimmedLine === '[Interface]') {
+                inInterfaceSection = true;
+                inPeerSection = false;
                 continue;
               }
-              if (trimmedLine.startsWith('[Peer]')) {
-                currentSection = 'peer';
+              if (trimmedLine === '[Peer]') {
+                inPeerSection = true;
+                inInterfaceSection = false;
                 continue;
               }
-              if (trimmedLine.startsWith('[')) {
-                currentSection = null;
-                continue;
-              }
-              if (!currentSection) continue;
 
-              const parts = trimmedLine.split('=');
-              if (parts.length < 2) continue;
-              const key = parts[0].trim();
-              const value = parts.slice(1).join('=').trim();
-              config[currentSection][key] = value;
+              if (inInterfaceSection) {
+                const parts = trimmedLine.split('=');
+                if (parts.length < 2) continue;
+                const key = parts[0].trim();
+                const value = parts.slice(1).join('=').trim();
+                config.interface[key] = value;
+              }
+              if (inPeerSection) {
+                const parts = trimmedLine.split('=');
+                if (parts.length < 2) continue;
+                const key = parts[0].trim();
+                const value = parts.slice(1).join('=').trim();
+                config.peer[key] = value;
+              }
             }
 
             console.log('Imported server config:', config);
