@@ -72,6 +72,7 @@ new Vue({
     remember: false,
     rememberMeEnabled: false,
 
+    tab: 'clients',
     clients: null,
     clientsPersist: {},
     clientDelete: null,
@@ -85,6 +86,12 @@ new Vue({
     clientEditExpireDate: null,
     clientEditExpireDateId: null,
     qrcode: null,
+
+    servers: null,
+    serverCreate: null,
+    serverCreateName: '',
+    serverCreatePublicKey: '',
+    serverCreateAllowedIPs: '',
 
     currentRelease: null,
     latestRelease: null,
@@ -266,6 +273,24 @@ new Vue({
       if (this.enableSortClient) {
         this.clients = sortByProperty(this.clients, 'name', this.sortClient);
       }
+
+      this.refreshServers();
+    },
+    async refreshServers() {
+      if (!this.authenticated) return;
+      this.servers = await this.api.getServers();
+    },
+    showNewDialog() {
+      if (this.tab === 'clients') {
+        this.clientCreate = true;
+        this.clientCreateName = '';
+        this.clientExpiredDate = '';
+      } else {
+        this.serverCreate = true;
+        this.serverCreateName = '';
+        this.serverCreatePublicKey = '';
+        this.serverCreateAllowedIPs = '';
+      }
     },
     login(e) {
       e.preventDefault();
@@ -312,6 +337,16 @@ new Vue({
       this.api.createClient({ name, expiredDate })
         .catch((err) => alert(err.message || err.toString()))
         .finally(() => this.refresh().catch(console.error));
+    },
+    createServer() {
+      const name = this.serverCreateName;
+      const publicKey = this.serverCreatePublicKey;
+      const allowedIPs = this.serverCreateAllowedIPs;
+      if (!name || !publicKey || !allowedIPs) return;
+
+      this.api.createServer({ name, publicKey, allowedIPs })
+        .catch((err) => alert(err.message || err.toString()))
+        .finally(() => this.refreshServers().catch(console.error));
     },
     deleteClient(client) {
       this.api.deleteClient({ clientId: client.id })

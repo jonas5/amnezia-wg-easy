@@ -74,6 +74,7 @@ module.exports = class WireGuard {
             h4: H4,
           },
           clients: {},
+          servers: {},
         };
         debug('Configuration generated.');
       }
@@ -150,6 +151,17 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
 }AllowedIPs = ${client.address}/32`;
     }
 
+    for (const [serverId, server] of Object.entries(config.servers)) {
+      if (!server.enabled) continue;
+
+      result += `
+
+# Server: ${server.name} (${serverId})
+[Peer]
+PublicKey = ${server.publicKey}
+AllowedIPs = ${server.allowedIPs}`;
+    }
+
     debug('Config saving...');
     await fs.writeFile(path.join(WG_PATH, 'wg0.json'), JSON.stringify(config, false, 2), {
       mode: 0o660,
@@ -223,6 +235,27 @@ ${client.preSharedKey ? `PresharedKey = ${client.preSharedKey}\n` : ''
       });
 
     return clients;
+  }
+
+  async getServers() {
+    const config = await this.getConfig();
+    const servers = Object.entries(config.servers).map(([serverId, server]) => ({
+      id: serverId,
+      name: server.name,
+      enabled: server.enabled,
+      address: server.address,
+      publicKey: server.publicKey,
+      createdAt: new Date(server.createdAt),
+      updatedAt: new Date(server.updatedAt),
+      allowedIPs: server.allowedIPs,
+      persistentKeepalive: null,
+      latestHandshakeAt: null,
+      transferRx: null,
+      transferTx: null,
+      endpoint: null,
+    }));
+
+    return servers;
   }
 
   async getClient({ clientId }) {
@@ -326,6 +359,37 @@ Endpoint = ${WG_HOST}:${WG_CONFIG_PORT}`;
     await this.saveConfig();
 
     return client;
+  }
+
+  async createServer({ name, publicKey, allowedIPs }) {
+    if (!name) {
+      throw new Error('Missing: Name');
+    }
+    if (!publicKey) {
+      throw new Error('Missing: Public Key');
+    }
+    if (!allowedIPs) {
+      throw new Error('Missing: Allowed IPs');
+    }
+
+    const config = await this.getConfig();
+
+    // Create Server
+    const id = crypto.randomUUID();
+    const server = {
+      id,
+      name,
+      publicKey,
+      allowedIPs,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      enabled: true,
+    };
+    config.servers[id] = server;
+
+    await this.saveConfig();
+
+    return server;
   }
 
   async deleteClient({ clientId }) {

@@ -231,6 +231,9 @@ module.exports = class Server {
         debug(`Deleted Session: ${sessionId}`);
         return { success: true };
       }))
+      .get('/api/wireguard/servers', defineEventHandler(() => {
+        return WireGuard.getServers();
+      }))
       .get('/api/wireguard/client', defineEventHandler(() => {
         return WireGuard.getClients();
       }))
@@ -257,6 +260,11 @@ module.exports = class Server {
         const { name } = await readBody(event);
         const { expiredDate } = await readBody(event);
         await WireGuard.createClient({ name, expiredDate });
+        return { success: true };
+      }))
+      .post('/api/wireguard/server', defineEventHandler(async (event) => {
+        const { name, publicKey, allowedIPs } = await readBody(event);
+        await WireGuard.createServer({ name, publicKey, allowedIPs });
         return { success: true };
       }))
       .delete('/api/wireguard/client/:clientId', defineEventHandler(async (event) => {

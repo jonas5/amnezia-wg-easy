@@ -132,6 +132,21 @@ class API {
     });
   }
 
+  async getServers() {
+    return this.request({
+      method: 'GET',
+      path: 'wireguard/servers',
+    });
+  }
+
+  async createServer({ name, publicKey, allowedIPs }) {
+    return this.request({
+      method: 'POST',
+      path: 'wireguard/server',
+      body: { name, publicKey, allowedIPs },
+    });
+  }
+
   async deleteClient({ clientId }) {
     return this.call({
       method: 'delete',
